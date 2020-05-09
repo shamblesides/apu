@@ -36,7 +36,8 @@ __extension__ typedef signed long long		INT64;
 typedef UINT32	offs_t;
 
 /* stream_sample_t is used to represent a single sample in a sound stream */
-typedef INT32 stream_sample_t;
+typedef INT32 gb_sample_t;
+typedef float stream_sample_t;
 
 #if defined(_MSC_VER)
 //#define INLINE	static __forceinline
@@ -56,8 +57,6 @@ typedef void	(*write8_device_func) (offs_t offset, UINT8 data);
 #else
 #define logerror
 #endif
-
-extern stream_sample_t* DUMMYBUF[];
 
 /******************************
 /
@@ -566,7 +565,8 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 	gb_sound_t *gb = &GBSoundData[ChipID];
 	stream_sample_t *outl = outputs[0];
 	stream_sample_t *outr = outputs[1];
-	stream_sample_t sample, left, right, mode4_mask;
+	stream_sample_t left, right;
+	gb_sample_t sample, mode4_mask;
 
 	while( samples-- > 0 )
 	{
@@ -859,9 +859,9 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 		left *= gb->snd_control.vol_left;
 		right *= gb->snd_control.vol_right;
 
-		/* pump up the volume */
-		left <<= 6;
-		right <<= 6;
+		/* adjust volume numbers to make sense for floats */
+		left /= 1024;
+		right /= 1024;
 
 		/* Update the buffers */
 		*(outl++) = left;
