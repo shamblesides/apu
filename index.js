@@ -53,8 +53,10 @@ function hit(note, beats) {
 }
 
 const successTrack = new Uint8Array([
+	// power on
+	0xB3, 0x26-0x10, 0b10000000,
 	// l vol (-LLL) / r vol (-RRR)
-	// 0xB3, 0x24-0x10, 0b01110111,
+	0xB3, 0x24-0x10, 0b01110111,
 	// mixer (LLLL RRRR) for (1234)
 	0xB3, 0x25-0x10, 0b11111111,
 
@@ -72,7 +74,7 @@ const successTrack = new Uint8Array([
 	}).reduce((arr,x) => [].concat.apply(arr, x), []),
 ]);
 
-gameboy.sfx(successTrack.buffer).play();
+gameboy.bgm(successTrack.buffer, -1).play();
 
 function addButton(name, fn) {
 	const button = document.createElement('button');
