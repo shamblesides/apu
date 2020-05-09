@@ -180,7 +180,7 @@ void gameboy_sound_set_options(UINT8 Flags);
 
 #define LEFT 1
 #define RIGHT 2
-#define MAX_FREQUENCIES 2048
+#define MAX_FREQUENCIES 4096
 #define FIXED_POINT 16
 
 /* Represents wave duties of 12.5%, 25%, 50% and 75% */
@@ -363,12 +363,12 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_1.env_length = gb->env_length_table[data & 0x7];
 		break;
 	case NR13: /* Frequency lo (R/W) */
-		gb->snd_1.frequency = ((gb->snd_regs[NR14]&0x7)<<8) | gb->snd_regs[NR13];
+		gb->snd_1.frequency = ((gb->snd_regs[NR14]&0xf)<<8) | gb->snd_regs[NR13];
 		gb->snd_1.period = gb->period_table[gb->snd_1.frequency];
 		break;
 	case NR14: /* Frequency hi / Initialize (R/W) */
 		gb->snd_1.mode = (data & 0x40) >> 6;
-		gb->snd_1.frequency = ((gb->snd_regs[NR14]&0x7)<<8) | gb->snd_regs[NR13];
+		gb->snd_1.frequency = ((gb->snd_regs[NR14]&0xf)<<8) | gb->snd_regs[NR13];
 		gb->snd_1.period = gb->period_table[gb->snd_1.frequency];
 		if( data & 0x80 )
 		{
@@ -396,11 +396,11 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_2.env_length = gb->env_length_table[data & 0x7];
 		break;
 	case NR23: /* Frequency lo (R/W) */
-		gb->snd_2.period = gb->period_table[((gb->snd_regs[NR24]&0x7)<<8) | gb->snd_regs[NR23]];
+		gb->snd_2.period = gb->period_table[((gb->snd_regs[NR24]&0xf)<<8) | gb->snd_regs[NR23]];
 		break;
 	case NR24: /* Frequency hi / Initialize (R/W) */
 		gb->snd_2.mode = (data & 0x40) >> 6;
-		gb->snd_2.period = gb->period_table[((gb->snd_regs[NR24]&0x7)<<8) | gb->snd_regs[NR23]];
+		gb->snd_2.period = gb->period_table[((gb->snd_regs[NR24]&0xf)<<8) | gb->snd_regs[NR23]];
 		if( data & 0x80 )
 		{
 			if( !gb->snd_2.on )
@@ -425,11 +425,11 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_3.level = (data & 0x60) >> 5;
 		break;
 	case NR33: /* Frequency lo (W) */
-		gb->snd_3.period = gb->period_mode3_table[((gb->snd_regs[NR34]&0x7)<<8) + gb->snd_regs[NR33]];
+		gb->snd_3.period = gb->period_mode3_table[((gb->snd_regs[NR34]&0xf)<<8) + gb->snd_regs[NR33]];
 		break;
 	case NR34: /* Frequency hi / Initialize (W) */
 		gb->snd_3.mode = (data & 0x40) >> 6;
-		gb->snd_3.period = gb->period_mode3_table[((gb->snd_regs[NR34]&0x7)<<8) + gb->snd_regs[NR33]];
+		gb->snd_3.period = gb->period_mode3_table[((gb->snd_regs[NR34]&0xf)<<8) + gb->snd_regs[NR33]];
 		if( data & 0x80 )
 		{
 			if( !gb->snd_3.on )
@@ -903,8 +903,8 @@ int device_start_gameboy_sound(UINT8 ChipID, int clock)
 	/* Calculate the period tables */
 	for( I = 0; I < MAX_FREQUENCIES; I++ )
 	{
-		gb->period_table[I] = ((1 << FIXED_POINT) / (131072 / (2048 - I))) * gb->rate;
-		gb->period_mode3_table[I] = ((1 << FIXED_POINT) / (65536 / (2048 - I))) * gb->rate;
+		gb->period_table[I] = ((1 << FIXED_POINT) * (2048 - I) / (131072)) * gb->rate;
+		gb->period_mode3_table[I] = ((1 << FIXED_POINT) * (2048 - I) / (65536)) * gb->rate;
 	}
 	/* Calculate the period table for mode 4 */
 	for( I = 0; I < 8; I++ )
