@@ -72,7 +72,7 @@ void gb_sound_w(UINT8 ChipID, offs_t offset, UINT8 data);
 
 WASM_EXPORT
 void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples);
-int device_start_gameboy_sound(UINT8 ChipID, int clock);
+int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate);
 void device_stop_gameboy_sound(UINT8 ChipID);
 void device_reset_gameboy_sound(UINT8 ChipID);
 
@@ -266,7 +266,6 @@ struct _gb_sound_t
 };
 
 
-static UINT32 SampleRate = 48000;
 #define MAX_CHIPS	0x02
 static gb_sound_t GBSoundData[MAX_CHIPS];
 
@@ -874,7 +873,7 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 
 //static DEVICE_START( gameboy_sound )
 WASM_EXPORT
-int device_start_gameboy_sound(UINT8 ChipID, int clock)
+int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate)
 {
 	//gb_sound_t *gb = get_token(device);
 	gb_sound_t *gb;
@@ -891,7 +890,7 @@ int device_start_gameboy_sound(UINT8 ChipID, int clock)
 
 	//gb->channel = stream_create(device, 0, 2, device->machine->sample_rate, 0, gameboy_update);
 	//gb->rate = device->machine->sample_rate;
-	gb->rate = SampleRate;
+	gb->rate = sample_rate;
 
 	/* Calculate the envelope and sweep tables */
 	for( I = 0; I < 8; I++ )
