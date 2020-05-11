@@ -70,13 +70,11 @@ void gb_wave_w(UINT8 ChipID, offs_t offset, UINT8 data);
 UINT8 gb_sound_r(UINT8 ChipID, offs_t offset);
 void gb_sound_w(UINT8 ChipID, offs_t offset, UINT8 data);
 
-WASM_EXPORT
 void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples);
 int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate);
 void device_stop_gameboy_sound(UINT8 ChipID);
 void device_reset_gameboy_sound(UINT8 ChipID);
 
-WASM_EXPORT
 void gameboy_sound_set_mute_mask(UINT8 ChipID, UINT32 MuteMask);
 void gameboy_sound_set_options(UINT8 Flags);
 
@@ -1014,15 +1012,53 @@ void gameboy_sound_set_options(UINT8 Flags)
 /
 *******************************/
 
+WASM_EXPORT
+void init(UINT32 sample_rate) {
+	device_start_gameboy_sound(0, sample_rate);
+	device_start_gameboy_sound(1, sample_rate);
+	device_reset_gameboy_sound(0);
+	device_reset_gameboy_sound(1);
+}
+
+WASM_EXPORT
+void disable_channel(UINT8 ChipID, UINT32 channel) {
+	gb_sound_t *gb = &GBSoundData[ChipID];
+	if (channel == 0) gb->snd_1.Muted = 1;
+	if (channel == 1) gb->snd_2.Muted = 1;
+	if (channel == 2) gb->snd_3.Muted = 1;
+	if (channel == 3) gb->snd_4.Muted = 1;
+}
+
+WASM_EXPORT
+void enable_channel(UINT8 ChipID, UINT32 channel) {
+	gb_sound_t *gb = &GBSoundData[ChipID];
+	if (channel == 0) gb->snd_1.Muted = 0;
+	if (channel == 1) gb->snd_2.Muted = 0;
+	if (channel == 2) gb->snd_3.Muted = 0;
+	if (channel == 3) gb->snd_4.Muted = 0;
+}
+
 #define SAMPLE_COUNT 128
+
+stream_sample_t lchan0[SAMPLE_COUNT];
+stream_sample_t rchan0[SAMPLE_COUNT];
+stream_sample_t lchan1[SAMPLE_COUNT];
+stream_sample_t rchan1[SAMPLE_COUNT];
+
+stream_sample_t (*out_samples0[SAMPLE_COUNT]) = { lchan0, rchan0 };
+stream_sample_t (*out_samples1[SAMPLE_COUNT]) = { lchan1, rchan1 };
 
 WASM_EXPORT
 stream_sample_t lchan[SAMPLE_COUNT];
 WASM_EXPORT
 stream_sample_t rchan[SAMPLE_COUNT];
-stream_sample_t (*out_samples[SAMPLE_COUNT]) = { lchan, rchan };
 
 WASM_EXPORT
 void update() {
-	gameboy_update(0, out_samples, SAMPLE_COUNT);
+	gameboy_update(0, out_samples0, SAMPLE_COUNT);
+	gameboy_update(1, out_samples1, SAMPLE_COUNT);
+	for (int i = 0; i < SAMPLE_COUNT; ++i) {
+		lchan[i] = lchan0[i] + lchan1[i];
+		rchan[i] = rchan0[i] + rchan1[i];
+	}
 }

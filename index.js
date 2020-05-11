@@ -88,6 +88,10 @@ function addButton(name, fn) {
 addButton('boop', gameboy.sfx(hit(gameboy.C6,5)).play);
 
 const bumpBytes = new Uint8Array([
+	// power on
+	0xB3, 0x26-0x10, 0b10000000,
+	// l vol (-LLL) / r vol (-RRR)
+	0xB3, 0x24-0x10, 0b01110111,
 	// enable channels
 	0xB3, 0x25-0x10, 0b11111111,
 	// sweep
