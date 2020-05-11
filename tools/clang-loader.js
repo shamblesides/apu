@@ -1,15 +1,11 @@
 /**
  * Emscripten bad!!! Let's just compile
- * our C code with clang & wasm-ld instead ok?
+ * our C code with clang & llvm instead ok?
  * 
- * Requires llvm 8+, which has the
- * wasm32 target
- * 
- * Also clang
- * 
- * And wabt
- * 
- * TODO: can we use binaryen.js?
+ * Requirements
+ * - Clang
+ * - LLVM 8+ (has wasm-ld)
+ * - Binaryen (has wasm-opt)
  * 
  * https://surma.dev/things/c-to-webassembly/
  */
