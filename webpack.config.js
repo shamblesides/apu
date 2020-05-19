@@ -80,7 +80,7 @@ module.exports = (env, argv) => ({
     new CleanWebpackPlugin(),
     new DeclarationBundlerPlugin({
       moduleName: 'APU',
-      out: './apu.d.ts',
+      out: '../index.d.ts',
     }),
   ],
 });

@@ -1,4 +1,4 @@
-import '@shamblesides/audioworklet-polyfill';
+require('@shamblesides/audioworklet-polyfill');
 const workletSource = require('./GameBoyCore.worklet.js').default;
 const wasmURL = require('./gb.c').default;
 
