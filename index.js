@@ -1,4 +1,4 @@
-import * as gameboy from './lib/APU.ts';
+import * as gameboy from './lib/index.ts';
 import vgmURL1 from './vgmtest/friendly_battle.vgm'
 import vgmURL2 from './vgmtest/title.vgm'
 

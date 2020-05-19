@@ -1,12 +1,11 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const DeclarationBundlerPlugin = require('tsd-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = (env, argv) => ({
   entry: {
-    main: './lib/APU.ts'
+    main: './lib/index.ts'
   },
   output: {
     filename: `apu.js`,
@@ -78,9 +77,5 @@ module.exports = (env, argv) => ({
   ] : [
     new webpack.ProgressPlugin(),
     new CleanWebpackPlugin(),
-    new DeclarationBundlerPlugin({
-      moduleName: 'APU',
-      out: '../index.d.ts',
-    }),
   ],
 });
