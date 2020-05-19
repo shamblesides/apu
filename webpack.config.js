@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const webpack = require('webpack');
 
-module.exports = (env, argv) => console.log(env, argv) || ({
+module.exports = (env, argv) => ({
   entry: {
     main: './lib/APU.js'
   },
@@ -18,20 +18,6 @@ module.exports = (env, argv) => console.log(env, argv) || ({
         use: {
           loader: 'raw-loader',
         }
-      },
-      {
-        test: /\.wat$/,
-        use: [
-          {
-            loader: 'url-loader',
-            options: {
-              mimetype: 'application/wasm',
-            },
-          },
-          {
-            loader: path.resolve('./tools/wabt-loader.js'),
-          },
-        ],
       },
       {
         test: /\.c$/,
