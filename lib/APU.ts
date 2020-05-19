@@ -1,10 +1,23 @@
 import '@shamblesides/audioworklet-polyfill';
-import workletSource from './GameBoyCore.worklet.js';
-import wasmURL from './gb.c';
+const workletSource = require('./GameBoyCore.worklet.js').default;
+const wasmURL = require('./gb.c').default;
 
-export * from './notes.js';
+export const
+  C3=44,   Cs3=156,  D3=263,  Ds3=363,  E3=457,  F3=547,  Fs3=631,  G3=710,  Gs3=786,  A3=856,  As3=923,  B3=986,
+  C4=1046, Cs4=1102, D4=1155, Ds4=1205, E4=1253, F4=1297, Fs4=1339, G4=1379, Gs4=1417, A4=1452, As4=1486, B4=1517,
+  C5=1547, Cs5=1575, D5=1602, Ds5=1627, E5=1650, F5=1673, Fs5=1694, G5=1714, Gs5=1732, A5=1750, As5=1767, B5=1783,
+  C6=1798, Cs6=1812, D6=1825, Ds6=1837, E6=1849, F6=1860, Fs6=1871, G6=1881, Gs6=1890, A6=1899, As6=1907, B6=1915,
+  C7=1923, Cs7=1930, D7=1936, Ds7=1943, E7=1949, F7=1954, Fs7=1959, G7=1964, Gs7=1969, A7=1974, As7=1978, B7=1982,
+  C8=1985, Cs8=1989, D8=1992, Ds8=1995, E8=1998, F8=2001, Fs8=2004, G8=2006, Gs8=2009, A8=2011, As8=2013, B8=2015;
 
-window.AudioContext = window.AudioContext || window.webkitAudioContext;
+declare const webkitAudioContext: any;
+
+type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
+
+if ('webkitAudioContext' in window) {
+  window.AudioContext = webkitAudioContext;
+}
+
 export const audioContext = new AudioContext({latencyHint:'interactive'});
 export function allow() {
 	audioContext.resume();
@@ -14,18 +27,18 @@ let lastVolume = 1;
 const userVolumeNode = audioContext.createGain();
 userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
 userVolumeNode.connect(audioContext.destination);
-export function changeUserVolume(newVolume) {
+export function changeUserVolume(newVolume: number) {
 	if (newVolume >= 0 && newVolume <= 1) {
 		userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
 		userVolumeNode.gain.linearRampToValueAtTime(newVolume, audioContext.currentTime + 0.05)
 		lastVolume = newVolume;
 	}
 }
-export const audioNode = userVolumeNode;
+export const audioNode: AudioNode = userVolumeNode;
 
 const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
 const workletURL = URL.createObjectURL(workletBlob);
-const nodePromise = audioContext.audioWorklet.addModule(workletURL).then(() => {
+const nodePromise: Promise<AudioWorkletNode> = audioContext.audioWorklet.addModule(workletURL).then(() => {
   const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
   node.connect(userVolumeNode)
   return new Promise(resolve => {
@@ -38,8 +51,9 @@ const nodePromise = audioContext.audioWorklet.addModule(workletURL).then(() => {
   });
 })
 
-let nextInstanceId;
-function track(data, loop, mask=null) {
+let nextInstanceId = 0;
+
+function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
   return {
     play() {
       let id = ++nextInstanceId;
@@ -48,28 +62,28 @@ function track(data, loop, mask=null) {
       });
       return {
         pause() {
-          node.port.postMessage({ id, type: 'pause' });
+          nodePromise.then(node => node.port.postMessage({ id, type: 'pause' }));
         },
         resume() {
-          node.port.postMessage({ id, type: 'resume' });
+          nodePromise.then(node => node.port.postMessage({ id, type: 'resume' }));
         },
       }
     }
   }
 }
-export function bgm(data, loop=0) {
+export function bgm(data: ArrayBuffer, loop=0) {
   return track(data, loop);
 }
-export function sfx(data, mask=[1,1,1,1]) {
+export function sfx(data: ArrayBuffer, mask: APUTrackMask=[1,1,1,1]) {
   return track(data, -1, mask)
 }
 
-export function fromFile(arrayBuffer) {
+export function fromFile(arrayBuffer: ArrayBuffer) {
 	// make sure the 4-byte header is correct.
 	// It should be "Vgm " (space at the end)
   const header = new Uint8Array(arrayBuffer, 0, 4);
   for (let i = 0; i < 4; ++i) {
-    if (header[i] !== 'Vgm '[i].charCodeAt()) {
+    if (header[i] !== 'Vgm '.charCodeAt(i)) {
       throw new Error('Invalid header');
     }
   }
@@ -84,13 +98,3 @@ export function fromFile(arrayBuffer) {
 	
 	return bgm(data, loopPoint);
 }
-
-// function setWaveTable(bytes) {
-//   if (bytes.length !== 16 || !bytes.every(n => n >= 0 && n <= 0xFF)) {
-//     throw new Error('Expected 32 samples with values 0-255')
-//   }
-//   for (let i = 0; i < 16; ++i) {
-//     setWaveTableByte(i, bytes[i])
-//   }
-// }
-

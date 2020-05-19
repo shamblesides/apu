@@ -1,15 +1,21 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const DeclarationBundlerPlugin = require('tsd-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = (env, argv) => ({
   entry: {
-    main: './lib/APU.js'
+    main: './lib/APU.ts'
   },
   output: {
     filename: `apu.js`,
-    ...(argv.mode === 'development' ? {} : {libraryTarget: 'commonjs2'}),
+    ...(argv.mode === 'development' ? {
+
+    } : {
+      library: 'APU',
+      libraryTarget: 'umd'
+    }),
   },
   module: {
     rules: [
@@ -43,6 +49,11 @@ module.exports = (env, argv) => ({
         }
       },
       {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
         test: /\.vgm$/i,
         use: [
           {
@@ -51,6 +62,9 @@ module.exports = (env, argv) => ({
         ],
       },
     ]
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js', '.c'],
   },
   plugins: (argv.mode === 'development') ? [
     new webpack.ProgressPlugin(),
@@ -64,5 +78,9 @@ module.exports = (env, argv) => ({
   ] : [
     new webpack.ProgressPlugin(),
     new CleanWebpackPlugin(),
+    new DeclarationBundlerPlugin({
+      moduleName: 'APU',
+      out: './apu.d.ts',
+    }),
   ],
 });
