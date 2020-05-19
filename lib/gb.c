@@ -1,89 +1,3 @@
-#define WASM_EXPORT __attribute__((visibility("default")))
-
-/******************************
-/
-/   mamedef.h
-/
-*******************************/
-
-// typedefs to use MAME's (U)INTxx types (copied from MAME\src\ods\odscomm.h)
-/* 8-bit values */
-typedef unsigned char						UINT8;
-typedef signed char 						INT8;
-
-/* 16-bit values */
-typedef unsigned short						UINT16;
-typedef signed short						INT16;
-
-/* 32-bit values */
-#ifndef _WINDOWS_H
-typedef unsigned int						UINT32;
-typedef signed int							INT32;
-#endif
-
-/* 64-bit values */
-#ifndef _WINDOWS_H
-#ifdef _MSC_VER
-typedef signed __int64						INT64;
-typedef unsigned __int64					UINT64;
-#else
-__extension__ typedef unsigned long long	UINT64;
-__extension__ typedef signed long long		INT64;
-#endif
-#endif
-
-/* offsets and addresses are 32-bit (for now...) */
-typedef UINT32	offs_t;
-
-/* stream_sample_t is used to represent a single sample in a sound stream */
-typedef INT32 gb_sample_t;
-typedef float stream_sample_t;
-
-#if defined(_MSC_VER)
-//#define INLINE	static __forceinline
-#define INLINE	static __inline
-#elif defined(__GNUC__)
-#define INLINE	static __inline__
-#else
-#define INLINE	static inline
-#endif
-#define M_PI	3.14159265358979323846
-
-typedef UINT8	(*read8_device_func)  (offs_t offset);
-typedef void	(*write8_device_func) (offs_t offset, UINT8 data);
-
-#ifdef _DEBUG
-#define logerror	printf
-#else
-#define logerror
-#endif
-
-/******************************
-/
-/   gb.h
-/
-*******************************/
-
-/* Custom Sound Interface */
-UINT8 gb_wave_r(UINT8 ChipID, offs_t offset);
-void gb_wave_w(UINT8 ChipID, offs_t offset, UINT8 data);
-UINT8 gb_sound_r(UINT8 ChipID, offs_t offset);
-void gb_sound_w(UINT8 ChipID, offs_t offset, UINT8 data);
-
-void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples);
-int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate);
-void device_stop_gameboy_sound(UINT8 ChipID);
-void device_reset_gameboy_sound(UINT8 ChipID);
-
-void gameboy_sound_set_mute_mask(UINT8 ChipID, UINT32 MuteMask);
-void gameboy_sound_set_options(UINT8 Flags);
-
-/******************************
-/
-/   gb.c
-/
-*******************************/
-
 /**************************************************************************************
 * Game Boy sound emulation (c) Anthony Kruize (trandor@labyrinth.net.au)
 *
@@ -122,15 +36,33 @@ void gameboy_sound_set_options(UINT8 Flags);
 *   14/5/2002       AK - Removed magic numbers in the fixed point math.
 *   12/6/2002       AK - Merged SOUNDx structs into one SOUND struct.
 *  26/10/2002       AK - Finally fixed channel 3!
+*		12/5/2020			  NN - Adapted this codebase to use in WebAssembly
 *
 ***************************************************************************************/
 
-// #include "mamedef.h"
+#define WASM_EXPORT __attribute__((visibility("default")))
+
 // #include <stdlib.h>	// for rand
 // #include <memory.h>	// for memset
-//#include "emu.h"
-// #include "gb.h"
-//#include "streams.h"
+
+/* 8-bit values */
+typedef unsigned char						UINT8;
+typedef signed char 						INT8;
+
+/* 16-bit values */
+typedef unsigned short						UINT16;
+typedef signed short						INT16;
+
+/* 32-bit values */
+typedef unsigned int						UINT32;
+typedef signed int							INT32;
+
+/* offsets and addresses are 32-bit (for now...) */
+typedef UINT32	offs_t;
+
+/* stream_sample_t is used to represent a single sample in a sound stream */
+typedef INT32 gb_sample_t;
+typedef float stream_sample_t;
 
 
 /***************************************************************************
@@ -1005,12 +937,6 @@ void gameboy_sound_set_options(UINT8 Flags)
 }*/
 
 //DEFINE_LEGACY_SOUND_DEVICE(GAMEBOY, gameboy_sound);
-
-/******************************
-/
-/   main.c
-/
-*******************************/
 
 WASM_EXPORT
 void init(UINT32 sample_rate) {
