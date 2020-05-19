@@ -2,11 +2,11 @@
   "name": "apu",
   "version": "0.2.13",
   "description": "Easy 3 kB library for 98% accurate Gameboy audio",
-  "main": "dist/apu.js",
-  "types": "dist/apu.d.ts",
+  "main": "./dist/apu.js",
+  "types": "./dist/apu.d.ts",
   "files": [
-    "dist/*.js",
-    "dist/*.d.ts"
+    "./dist/*.js",
+    "./dist/*.d.ts"
   ],
   "scripts": {
     "start": "webpack-dev-server --entry=./index.js --mode=development",
@@ -43,7 +43,7 @@
     "webpack-dev-server": "^3.7.1"
   },
   "eslintIgnore": [
-    "webpack.config.js",
-    "dist"
+    "./webpack.config.js",
+    "./dist"
   ]
 }
