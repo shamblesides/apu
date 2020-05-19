@@ -1,6 +1,6 @@
 {
   "name": "apu",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "description": "Easy 3 kB library for 98% accurate Gameboy audio",
   "main": "./dist/apu.js",
   "types": "./dist/apu.d.ts",
