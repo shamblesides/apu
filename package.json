@@ -35,6 +35,7 @@
     "file-loader": "^6.0.0",
     "html-webpack-plugin": "^3.2.0",
     "raw-loader": "^4.0.1",
+    "terser": "^4.7.0",
     "ts-loader": "^7.0.4",
     "typescript": "^3.9.2",
     "url-loader": "^4.1.0",
@@ -45,5 +46,10 @@
   "eslintIgnore": [
     "./webpack.config.js",
     "./dist"
+  ],
+  "browserslist": [
+    "last 2 versions and not dead and > 0.5% in US",
+    "not ie 11",
+    "ios >=9.3"
   ]
 }

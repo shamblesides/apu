@@ -20,9 +20,14 @@ module.exports = (env, argv) => ({
     rules: [
       {
         test: /\.worklet.js$/,
-        use: {
-          loader: 'raw-loader',
-        }
+        use: (argv.mode === 'development') ? [
+          'raw-loader',
+          'babel-loader',
+        ] : [
+          'raw-loader',
+          path.resolve('./tools/terser-loader.js'),
+          'babel-loader',
+        ],
       },
       {
         test: /\.c$/,
@@ -33,37 +38,18 @@ module.exports = (env, argv) => ({
               mimetype: 'application/wasm',
             },
           },
-          {
-            loader: path.resolve('./tools/clang-loader.js'),
-          },
+          path.resolve('./tools/clang-loader.js'),
         ]
-      },
-      {
-        test: /\.js$/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env'],
-          }
-        }
       },
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
       },
       {
         test: /\.vgm$/i,
-        use: [
-          {
-            loader: 'file-loader',
-          },
-        ],
+        use: 'file-loader',
       },
     ]
-  },
-  resolve: {
-    extensions: ['.tsx', '.ts', '.js', '.c'],
   },
   plugins: (argv.mode === 'development') ? [
     new webpack.ProgressPlugin(),
