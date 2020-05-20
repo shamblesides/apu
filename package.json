@@ -8,9 +8,9 @@
     "index.d.ts"
   ],
   "scripts": {
-    "start": "webpack-dev-server --entry=./index.js --mode=development",
+    "start": "webpack-dev-server --mode=development",
     "build": "npm run build-browser && npm run build-typings",
-    "build-browser": "webpack",
+    "build-browser": "webpack --mode=production",
     "build-typings": "tsc --emitDeclarationOnly --declaration lib/index.ts --outDir .",
     "lint": "eslint '**/*.js' '**/*.ts'",
     "prepublishOnly": "npm run build"

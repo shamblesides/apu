@@ -1,13 +1,17 @@
-import * as gameboy from './lib/index.ts';
-import vgmURL1 from './vgmtest/friendly_battle.vgm'
-import vgmURL2 from './vgmtest/title.vgm'
+<script defer>
+const documentReady = new Promise(resolve => document.body ? resolve() : document.addEventListener('DOMContentLoaded', resolve));
 
-gameboy.allow();
+const vgmURL1 = './vgmtest/friendly_battle.vgm'
+const vgmURL2 = './vgmtest/title.vgm'
 
-document.body.addEventListener('mousedown', gameboy.allow);
-document.body.addEventListener('touchstart', gameboy.allow);
+APU.allow();
 
-gameboy.changeUserVolume(0.5);
+documentReady.then(() => {
+  document.body.addEventListener('mousedown', APU.allow);
+  document.body.addEventListener('touchstart', APU.allow);
+})
+
+APU.changeUserVolume(0.5);
 
 function hit(note, beats) {
 	return new Uint8Array([
@@ -68,13 +72,13 @@ const successTrack = new Uint8Array([
 
 	// song
 	... new Array(6).fill().map((_,i) => {
-		const note = [gameboy.C5, gameboy.E5, gameboy.G5][i%3];
+		const note = [APU.C5, APU.E5, APU.G5][i%3];
 		const beats = [3,2][i%2];
 		return hit(note, beats);
 	}).reduce((arr,x) => [].concat.apply(arr, x), []),
 ]);
 
-gameboy.bgm(successTrack.buffer, -1).play();
+APU.bgm(successTrack.buffer, -1).play();
 
 function addButton(name, fn) {
 	const button = document.createElement('button');
@@ -82,10 +86,10 @@ function addButton(name, fn) {
 	button.style.cssText = `display: block; width: 200px; margin: 10px auto; padding: 20px 0;`
 	button.addEventListener('click', fn);
 
-	document.body.appendChild(button);
+  documentReady.then(() => document.body.appendChild(button));
 }
 
-addButton('boop', gameboy.sfx(hit(gameboy.C6,5)).play);
+addButton('boop', APU.sfx(hit(APU.C6,5)).play);
 
 const bumpBytes = new Uint8Array([
 	// power on
@@ -101,13 +105,13 @@ const bumpBytes = new Uint8Array([
 	// start volume VVVV, direction A (+/- =1/0), period PPP
 	0xB3, 0x12-0x10, 0b11110001,
 	// pitch low
-	0xB3, 0x13-0x10, gameboy.C4&0xFF,
+	0xB3, 0x13-0x10, APU.C4&0xFF,
 	// trigger 1, something? 0, --- pitch high HHH
-	0xB3, 0x14-0x10, 0b10000000 + (gameboy.C4>>8),
+	0xB3, 0x14-0x10, 0b10000000 + (APU.C4>>8),
 	// track duration
 	0x61, (44100/2)&0xFF, (44100/2)>>8,
 ]);
-const bumpSFX = gameboy.sfx(bumpBytes, [1,0,0,0])
+const bumpSFX = APU.sfx(bumpBytes, [1,0,0,0])
 
 let stopHandle = null;
 addButton('*BUMP BUMP BUMP*', (evt) => {
@@ -121,7 +125,7 @@ addButton('*BUMP BUMP BUMP*', (evt) => {
 	evt.target.innerText = (stopHandle) ? '*stop bumps*' :'*BUMP BUMP BUMP*'
 });
 
-export function transformKeffieFile(/** @type{ArrayBuffer} */arrayBuffer) {
+function transformKeffieFile(/** @type{ArrayBuffer} */arrayBuffer) {
 	const slowFactor = (0x400000 / 0x3a0000);
   // get where vgm data starts. this is 
   // (address of where vgm offset is stored, always 0x34)
@@ -191,7 +195,7 @@ const tracks = [vgmURL1, vgmURL2]
 	return fetch(url)
 	.then(res => res.arrayBuffer())
 	.then(transformKeffieFile)
-	.then(gameboy.fromFile)
+  .then(APU.fromFile)
 })
 
 Promise.all(tracks).then(loadedFiles => {
@@ -205,7 +209,9 @@ Promise.all(tracks).then(loadedFiles => {
 })
 
 const wavbytes = new Uint8Array([0xB3, 0x15, 0xFF, 0xB3, 0x20, 0xFF, 0xB3, 0x21, 0x00, 0x61, 0xff, 0xff])
-const wavsound = gameboy.sfx(wavbytes, [0,0,1,0])
+const wavsound = APU.sfx(wavbytes, [0,0,1,0])
 addButton('0x3x', () => {
 	wavsound.play();
 })
+
+</script>

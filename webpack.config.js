@@ -9,12 +9,8 @@ module.exports = (env, argv) => ({
   },
   output: {
     filename: `apu.js`,
-    ...(argv.mode === 'development' ? {
-
-    } : {
-      library: 'APU',
-      libraryTarget: 'umd'
-    }),
+    library: 'APU',
+    libraryTarget: 'umd'
   },
   module: {
     rules: [
@@ -55,10 +51,8 @@ module.exports = (env, argv) => ({
     new webpack.ProgressPlugin(),
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      title: 'test',
-      meta: {
-        viewport: "width=device-width, user-scalable=no",
-      }
+      template: 'vgmtest/index.html',
+      inject: 'head',
     }),
   ] : [
     new webpack.ProgressPlugin(),
