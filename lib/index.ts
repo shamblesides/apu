@@ -1,6 +1,8 @@
 require('@shamblesides/audioworklet-polyfill');
-const workletSource = require('./GameBoyCore.worklet.js').default;
+const workletSource = require('./gb.worklet.js').default;
 const wasmURL = require('./gb.c').default;
+
+type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
 
 export const
   C3=44,   Cs3=156,  D3=263,  Ds3=363,  E3=457,  F3=547,  Fs3=631,  G3=710,  Gs3=786,  A3=856,  As3=923,  B3=986,
@@ -11,9 +13,6 @@ export const
   C8=1985, Cs8=1989, D8=1992, Ds8=1995, E8=1998, F8=2001, Fs8=2004, G8=2006, Gs8=2009, A8=2011, As8=2013, B8=2015;
 
 declare const webkitAudioContext: any;
-
-type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
-
 if ('webkitAudioContext' in window) {
   window.AudioContext = webkitAudioContext;
 }
