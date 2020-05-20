@@ -55,7 +55,7 @@ let nextInstanceId = 0;
 function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
   return {
     play() {
-      let id = ++nextInstanceId;
+      const id = ++nextInstanceId;
       nodePromise.then(node => {
         node.port.postMessage({ id, type: 'play', data, loop, mask });
       });

@@ -14,7 +14,7 @@ const fs = require('fs');
 const child_process = require('child_process');
 const os = require('os');
 
-function clangEmitLLVM(str) {
+function clangEmitLLVM() {
   const infile = this.resourcePath;
   const outfile = `${os.tmpdir()}/apu-clang-loader-${Math.random().toString().slice(2)}.ll`;
 

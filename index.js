@@ -134,7 +134,7 @@ export function transformKeffieFile(/** @type{ArrayBuffer} */arrayBuffer) {
   const data = arrayBuffer.slice(data0);
 	const inp = new Uint8Array(data);
 	const out = [];
-	let freqs = [0,0,0];
+	const freqs = [0,0,0];
 	let newLoop = -1;
 	for (let i = 0; i < inp.length; ++i) {
 		if (i === oldLoop) {
