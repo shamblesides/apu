@@ -206,6 +206,13 @@ Promise.all(tracks).then(loadedFiles => {
 			track.play();
 		});
 	})
+
+	loadedFiles.forEach((track, i) => {
+		addButton('fade, and... ' + trackNames[i], () => {
+			APU.fade(2000).then(track.play);
+		});
+	})
+
 })
 
 const wavbytes = new Uint8Array([0xB3, 0x15, 0xFF, 0xB3, 0x20, 0xFF, 0xB3, 0x21, 0x00, 0x61, 0xff, 0xff])

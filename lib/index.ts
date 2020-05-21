@@ -52,9 +52,13 @@ const nodePromise: Promise<AudioWorkletNode> = audioContext.audioWorklet.addModu
 
 let nextInstanceId = 0;
 
+let allowSFX = true;
+
 function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
   return {
     play() {
+      if (mask && !allowSFX) return null;
+
       const id = ++nextInstanceId;
       nodePromise.then(node => {
         node.port.postMessage({ id, type: 'play', data, loop, mask });
@@ -96,4 +100,32 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
   const data = arrayBuffer.slice(data0);
 	
 	return bgm(data, loopPoint);
+}
+
+export function fade(millis: number) {
+  return nodePromise.then(node => {
+    // halt any currently-playing SFX
+    sfx(new ArrayBuffer(0), [0,0,0,0]).play();
+
+    // disallow sfx until fade completes
+    allowSFX = false;
+
+    // use NR50 to fade out
+    for (let i = 0; i <= 5; ++i) {
+      const vol = 6 - i;
+      setTimeout(() => node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) }), millis*i/7);
+    }
+
+    // stop sound with NR52
+    setTimeout(() => {
+      node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
+      // and clear song
+      bgm(new ArrayBuffer(0), -1).play();
+    }, millis*6/7);
+
+    // resolve
+    return new Promise(resolve => setTimeout(resolve, millis))
+    // ... and allow sfx once again
+    .then(() => { allowSFX = true });
+  });
 }
