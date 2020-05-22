@@ -92,9 +92,9 @@ function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
 
 /**
  * Create a BGM object
- * 
+ *
  * When a BGM is played, it will immediately stop any previous BGM and SFX
- * 
+ *
  * TODO: resume paused BGM
  * @param data Data block of a VGM file
  * @param loop Byte offset of the data block to loop back to upon completion. (-1 if no loop)
@@ -105,13 +105,13 @@ export function bgm(data: ArrayBuffer, loop=0) {
 
 /**
  * Create an SFX object
- * 
- * When a SFX is played, it will immediately stop any previous SFX 
+ *
+ * When a SFX is played, it will immediately stop any previous SFX
  *
  * It will also immediately take control away from the BGM for playing on channels,
  * and should silence those channels. When the SFX completes, it will give control
  * back to the BGM for all channels.
- * 
+ *
  * Right now a channel mask is used for an SFX to declare which channels it intends
  * to use. A smarter mechanism may be used in the future, such as scanning the data.
  * @param data Data block of a VGM file
@@ -123,7 +123,7 @@ export function sfx(data: ArrayBuffer, mask: APUTrackMask=[1,1,1,1]) {
 
 /**
  * Creates a BGM object from an entire .vgm file contents, as an ArrayBuffer
- * @param arrayBuffer 
+ * @param arrayBuffer
  */
 export function fromFile(arrayBuffer: ArrayBuffer) {
 	// make sure the 4-byte header is correct.
