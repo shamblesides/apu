@@ -23,6 +23,20 @@ Browser support
 Latest Chrome, Safari, Firefox
 
 
+Developing
+----------
+
+To develop this project you'll need some tooling to compile C to wasm:
+
+* Clang
+* LLVM 8+ (should include wasm-ld)
+* Binaryen (should include wasm-opt)
+
+Troubleshooting:
+
+* On Mac, when installing llvm through Brew, you might find that wasm-ld is still not available. Try `brew link --force llvm`
+
+
 Acknowledgments
 ---------------
 
