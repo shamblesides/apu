@@ -20,7 +20,7 @@
     "url": "git+https://github.com/shamblesides/apu.git"
   },
   "author": "Nigel Nelson",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/shamblesides/apu/issues"
   },
