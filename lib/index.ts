@@ -17,7 +17,15 @@ if ('webkitAudioContext' in window) {
   window.AudioContext = webkitAudioContext;
 }
 
+/**
+ * Audio Context that all APU stuff runs on
+ */
 export const audioContext = new AudioContext({latencyHint:'interactive'});
+
+/**
+ * Resumes the audio context. Should be called as a result of some user event, like a click.
+ * Until this is called, the browser won't allow any sound to play.
+ */
 export function allow() {
 	audioContext.resume();
 }
@@ -26,6 +34,10 @@ let lastVolume = 1;
 const userVolumeNode = audioContext.createGain();
 userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
 userVolumeNode.connect(audioContext.destination);
+/**
+ * Volume multiplier intended to be changed by a user-facing volume control
+ * @param newVolume Value between 0 and 1
+ */
 export function changeUserVolume(newVolume: number) {
 	if (newVolume >= 0 && newVolume <= 1) {
 		userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
@@ -33,6 +45,9 @@ export function changeUserVolume(newVolume: number) {
 		lastVolume = newVolume;
 	}
 }
+/**
+ * The last audio node, which is connected to the AudioContext's destination
+ */
 export const audioNode: AudioNode = userVolumeNode;
 
 const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
@@ -74,13 +89,42 @@ function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
     }
   }
 }
+
+/**
+ * Create a BGM object
+ * 
+ * When a BGM is played, it will immediately stop any previous BGM and SFX
+ * 
+ * TODO: resume paused BGM
+ * @param data Data block of a VGM file
+ * @param loop Byte offset of the data block to loop back to upon completion. (-1 if no loop)
+ */
 export function bgm(data: ArrayBuffer, loop=0) {
   return track(data, loop);
 }
+
+/**
+ * Create an SFX object
+ * 
+ * When a SFX is played, it will immediately stop any previous SFX 
+ *
+ * It will also immediately take control away from the BGM for playing on channels,
+ * and should silence those channels. When the SFX completes, it will give control
+ * back to the BGM for all channels.
+ * 
+ * Right now a channel mask is used for an SFX to declare which channels it intends
+ * to use. A smarter mechanism may be used in the future, such as scanning the data.
+ * @param data Data block of a VGM file
+ * @param mask Array of four 0's or 1's that indicates which channels this SFX will be using
+ */
 export function sfx(data: ArrayBuffer, mask: APUTrackMask=[1,1,1,1]) {
   return track(data, -1, mask)
 }
 
+/**
+ * Creates a BGM object from an entire .vgm file contents, as an ArrayBuffer
+ * @param arrayBuffer 
+ */
 export function fromFile(arrayBuffer: ArrayBuffer) {
 	// make sure the 4-byte header is correct.
 	// It should be "Vgm " (space at the end)
@@ -102,26 +146,35 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
 	return bgm(data, loopPoint);
 }
 
-export function fade(millis: number) {
+/**
+ * Slowly fade out the BGM. This also immediately stops current
+ * SFX, and prevents any new SFX from playing until completion.
+ * @param millis Number of milliseconds for the fade to complete
+ * @returns A promise that resolves when the fade has completed
+ */
+export function fade(millis: number = 2000) {
+  // TODO: should be no-op if already fading
   return nodePromise.then(node => {
     // halt any currently-playing SFX
     sfx(new ArrayBuffer(0), [0,0,0,0]).play();
 
-    // disallow sfx until fade completes
-    allowSFX = false;
+    if (millis > 0) {
+      // disallow sfx until fade completes
+      allowSFX = false;
 
-    // use NR50 to fade out
-    for (let i = 0; i <= 5; ++i) {
-      const vol = 6 - i;
-      setTimeout(() => node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) }), millis*i/7);
+      // use NR50 to fade out
+      for (let i = 0; i <= 5; ++i) {
+        const vol = 6 - i;
+        setTimeout(() => node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) }), millis*i/7);
+      }
+
+      // stop sound with NR52
+      setTimeout(() => {
+        node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
+        // and clear song
+        bgm(new ArrayBuffer(0), -1).play();
+      }, millis*6/7);
     }
-
-    // stop sound with NR52
-    setTimeout(() => {
-      node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
-      // and clear song
-      bgm(new ArrayBuffer(0), -1).play();
-    }, millis*6/7);
 
     // resolve
     return new Promise(resolve => setTimeout(resolve, millis))
