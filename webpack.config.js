@@ -22,7 +22,13 @@ module.exports = (env, argv) => ({
         ] : [
           'raw-loader',
           path.resolve('./tools/terser-loader.js'),
-          'babel-loader',
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: ["@babel/preset-env"],
+              plugins: []
+            }
+          },
         ],
       },
       {
