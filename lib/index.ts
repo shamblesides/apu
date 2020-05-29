@@ -182,3 +182,19 @@ export function fade(millis: number = 2000) {
     .then(() => { allowSFX = true });
   });
 }
+
+type APUWait = number;
+type APUCommand = APUPulseCommand | APUWaveCommand | APUNoiseCommand;
+type APUPulseCommand = {
+  
+};
+type APUWaveCommand = {
+  
+};
+type APUNoiseCommand = {
+  
+};
+
+export function compile(commands: (APUCommand|APUWait)[]) {
+
+}
