@@ -29,7 +29,7 @@ Developing
 To develop this project you'll need some tooling to compile C to wasm:
 
 * Clang
-* LLVM 8+ (should include wasm-ld)
+* LLVM 8+ (should include wasm-ld; or, on Ubuntu 20.04, wasm-ld-10)
 * Binaryen (should include wasm-opt)
 
 Troubleshooting:

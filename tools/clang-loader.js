@@ -37,7 +37,7 @@ function wasmLD(str) {
 
   fs.writeFileSync(infile, str);
   const command = [
-    `wasm-ld`,
+    child_process.execSync('which wasm-ld || which wasm-ld-10').toString().trim(),
     '--no-entry',
     '--export-dynamic',
     '--lto-O3',
