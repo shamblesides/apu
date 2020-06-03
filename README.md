@@ -26,11 +26,29 @@ Latest Chrome, Safari, Firefox
 Developing
 ----------
 
-To develop this project you'll need some tooling to compile C to wasm:
+To develop this project you'll need:
 
+* Unix system (MacOS and Ubuntu definitely work)
+* Node 12+ (older versions may work but untested)
+* Make
 * Clang
 * LLVM 8+ (should include wasm-ld; or, on Ubuntu 20.04, wasm-ld-10)
 * Binaryen (should include wasm-opt)
+
+To build it:
+```sh
+make
+```
+
+To watch & rebuild:
+```sh
+npm run watch
+```
+
+To watch, rebuild, and run a live-updating web server:
+```sh
+npm start
+```
 
 Troubleshooting:
 
