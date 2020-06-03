@@ -1,6 +1,7 @@
-require('@shamblesides/audioworklet-polyfill');
-const workletSource = require('./gb.worklet.js').default;
-const wasmURL = require('./gb.c').default;
+namespace APU {
+
+const workletSource = `<%- worklet -%>`;
+const wasmURL = 'data:application/wasm;base64,<%- wasm -%>';
 
 type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
 
@@ -196,5 +197,7 @@ type APUNoiseCommand = {
 };
 
 export function compile(commands: (APUCommand|APUWait)[]) {
+
+}
 
 }
