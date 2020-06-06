@@ -5,25 +5,22 @@ default: .tmp dist dist/apu.js dist/apu.min.js dist/apu.polyfilled.js dist/apu.p
 clean:
 	rm -rf .tmp dist
 
-node_modules: package-lock.json
-	npm install
-
 dist:
 	mkdir dist
 
 dist/apu.js: .tmp/apu.js
 	cp .tmp/apu.js dist/apu.js
 
-dist/apu.min.js: node_modules dist/apu.js
+dist/apu.min.js: dist/apu.js
 	npx terser -mc < dist/apu.js > dist/apu.min.js
 
-dist/apu.polyfilled.js: node_modules dist/apu.js
+dist/apu.polyfilled.js: dist/apu.js
 	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.js > dist/apu.polyfilled.js
 
-dist/apu.polyfilled.min.js: node_modules dist/apu.min.js
+dist/apu.polyfilled.min.js: dist/apu.min.js
 	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.min.js > dist/apu.polyfilled.min.js
 
-index.d.ts: node_modules lib/index.ts
+index.d.ts: lib/index.ts
 	npx tsc --emitDeclarationOnly --declaration --lib dom,es2015 lib/index.ts --outDir .
 
 .tmp:
@@ -38,14 +35,14 @@ index.d.ts: node_modules lib/index.ts
 .tmp/gb.wasm: .tmp/gb.unoptimized.wasm
 	wasm-opt -O2 -o .tmp/gb.wasm .tmp/gb.unoptimized.wasm
 
-.tmp/gb.worklet.es5.js: node_modules lib/gb.worklet.js
+.tmp/gb.worklet.es5.js: lib/gb.worklet.js
 	npx babel --presets @babel/preset-env lib/gb.worklet.js > .tmp/gb.worklet.es5.js
 
-.tmp/gb.worklet.min.js: node_modules .tmp/gb.worklet.es5.js
+.tmp/gb.worklet.min.js: .tmp/gb.worklet.es5.js
 	npx terser -mc < .tmp/gb.worklet.es5.js > .tmp/gb.worklet.min.js
 
 .tmp/apu.ts: lib/index.ts .tmp/gb.wasm .tmp/gb.worklet.min.js
 	./tools/combine.js > .tmp/apu.ts
 
-.tmp/apu.js: node_modules .tmp/apu.ts
+.tmp/apu.js: .tmp/apu.ts
 	npx tsc -m umd --lib dom,es2015 .tmp/apu.ts 
