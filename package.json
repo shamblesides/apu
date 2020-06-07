@@ -10,7 +10,7 @@
   "scripts": {
     "start": "concurrently --names serve,watch 'npm run serve' 'npm run watch'",
     "serve": "live-server example",
-    "watch": "nodemon -w ./lib -e '*' -x make",
+    "watch": "nodemon -w ./lib -e '*' -x 'make || exit 1'",
     "build": "make",
     "lint": "eslint 'lib/*.js' 'lib/*.ts'",
     "prepublishOnly": "npm run build"
