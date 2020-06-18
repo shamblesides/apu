@@ -1,7 +1,7 @@
 namespace APU {
 
 const workletSource = `<%- worklet -%>`;
-const wasmURL = 'data:application/wasm;base64,<%- wasm -%>';
+const wasmEncoded = '<%- wasm -%>';
 
 type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
 
@@ -53,16 +53,13 @@ export const audioNode: AudioNode = userVolumeNode;
 
 const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
 const workletURL = URL.createObjectURL(workletBlob);
+const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
 const nodePromise: Promise<AudioWorkletNode> = audioContext.audioWorklet.addModule(workletURL).then(() => {
   const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
   node.connect(userVolumeNode)
   return new Promise(resolve => {
     node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', wasmURL);
-    xhr.responseType = 'arraybuffer';
-    xhr.onload = () => node.port.postMessage({ type: 'module', data: xhr.response })
-    xhr.send();
+    node.port.postMessage({ type: 'module', data: wasmBuffer });
   });
 })
 
