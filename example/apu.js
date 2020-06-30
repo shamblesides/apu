@@ -1,1 +1,1 @@
-../dist/apu.js
+../dist/apu.polyfilled.js
