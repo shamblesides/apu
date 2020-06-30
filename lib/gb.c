@@ -285,8 +285,15 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_1.length = gb->length_table[data & 0x3F];
 		break;
 	case NR12: /* Envelope (R/W) */
-		gb->snd_1.env_value = data >> 4;
 		gb->snd_1.env_direction = (data & 0x8) >> 3;
+		if (gb->snd_1.env_direction) {
+			gb->snd_1.env_value++;
+			if (gb->snd_1.env_value > 0x0F) {
+				gb->snd_1.env_value = 0;
+			}
+		} else {
+			gb->snd_1.env_value = data >> 4;
+		}
 		gb->snd_1.env_direction |= gb->snd_1.env_direction - 1;
 		gb->snd_1.env_length = gb->env_length_table[data & 0x7];
 		break;
@@ -318,8 +325,15 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_2.length = gb->length_table[data & 0x3F];
 		break;
 	case NR22: /* Envelope (R/W) */
-		gb->snd_2.env_value = data >> 4;
-		gb->snd_2.env_direction = (data & 0x8 ) >> 3;
+		gb->snd_2.env_direction = (data & 0x8) >> 3;
+		if (gb->snd_2.env_direction) {
+			gb->snd_2.env_value++;
+			if (gb->snd_2.env_value > 0x0F) {
+				gb->snd_2.env_value = 0;
+			}
+		} else {
+			gb->snd_2.env_value = data >> 4;
+		}
 		gb->snd_2.env_direction |= gb->snd_2.env_direction - 1;
 		gb->snd_2.env_length = gb->env_length_table[data & 0x7];
 		break;
@@ -379,8 +393,15 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		gb->snd_4.length = gb->length_table[data & 0x3F];
 		break;
 	case NR42: /* Envelope (R/W) */
-		gb->snd_4.env_value = data >> 4;
-		gb->snd_4.env_direction = (data & 0x8 ) >> 3;
+		gb->snd_4.env_direction = (data & 0x8) >> 3;
+		if (gb->snd_4.env_direction) {
+			gb->snd_4.env_value++;
+			if (gb->snd_4.env_value > 0x0F) {
+				gb->snd_4.env_value = 0;
+			}
+		} else {
+			gb->snd_4.env_value = data >> 4;
+		}
 		gb->snd_4.env_direction |= gb->snd_4.env_direction - 1;
 		gb->snd_4.env_length = gb->env_length_table[data & 0x7];
 		break;
