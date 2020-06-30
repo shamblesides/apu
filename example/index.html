@@ -5,6 +5,7 @@
 
     const vgmURL1 = './friendly_battle.vgm'
     const vgmURL2 = './title.vgm'
+    const vgmURL3 = './negativeland.vgm'
 
     APU.allow();
 
@@ -80,7 +81,7 @@
       }).reduce((arr, x) => [].concat.apply(arr, x), []),
     ]);
 
-    APU.bgm(successTrack.buffer, -1).play();
+    // APU.bgm(successTrack.buffer, -1).play();
 
     function addButton(name, fn) {
       const button = document.createElement('button');
@@ -192,16 +193,22 @@
       return outarr.buffer;
     }
 
-    const tracks = [vgmURL1, vgmURL2]
+    const tracks = [vgmURL1, vgmURL2, vgmURL3]
       .map(url => {
         return fetch(url)
           .then(res => res.arrayBuffer())
-          .then(transformKeffieFile)
+          .then(x => {
+            if ([vgmURL1, vgmURL2].includes(url)) {
+              return transformKeffieFile(x)
+            } else {
+              return x;
+            }
+          })
           .then(APU.fromFile)
       })
 
     Promise.all(tracks).then(loadedFiles => {
-      const trackNames = ['Friendly Battle', 'Title']
+      const trackNames = ['Friendly Battle', 'Title', 'Negativeland']
 
       loadedFiles.forEach((track, i) => {
         addButton(trackNames[i], () => {
@@ -215,6 +222,7 @@
         });
       })
 
+      loadedFiles[2].play();
     })
 
     const wavbytes = new Uint8Array([0xB3, 0x15, 0xFF, 0xB3, 0x20, 0xFF, 0xB3, 0x21, 0x00, 0x61, 0xff, 0xff])
