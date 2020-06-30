@@ -45,4 +45,4 @@ index.d.ts: lib/index.ts
 	./tools/combine.js > .tmp/apu.ts
 
 .tmp/apu.js: .tmp/apu.ts
-	npx tsc -m umd --lib dom,es2015 .tmp/apu.ts 
+	npx tsc -m es6 --lib dom,es2015 .tmp/apu.ts 

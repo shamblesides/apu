@@ -1,6 +1,7 @@
 <body>
-  <script src="apu.js"></script>
-  <script>
+  <script type="module">
+    import * as APU from "./apu.js";
+
     const documentReady = new Promise(resolve => document.body ? resolve() : document.addEventListener('DOMContentLoaded', resolve));
 
     const vgmURL1 = './friendly_battle.vgm'

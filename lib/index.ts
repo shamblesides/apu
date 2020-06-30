@@ -1,5 +1,3 @@
-namespace APU {
-
 const workletSource = `<%- worklet -%>`;
 const wasmEncoded = '<%- wasm -%>';
 
@@ -194,7 +192,5 @@ type APUNoiseCommand = {
 };
 
 export function compile(commands: (APUCommand|APUWait)[]) {
-
-}
 
 }
