@@ -462,7 +462,14 @@ static void gb_sound_w_internal(gb_sound_t *gb, UINT8 offset, UINT8 data)
 		break;
 	case NR12: /* Envelope (R/W) */
 		gb->snd_1.reg[2] = data;
-		gb->snd_1.envelope_value = data >> 4;
+		if (data & 0x8) {
+			gb->snd_1.envelope_value++;
+			if (gb->snd_1.envelope_value > 0x0F) {
+				gb->snd_1.envelope_value = 0;
+			}
+		} else {
+			gb->snd_1.envelope_value = data >> 4;
+		}
 		gb->snd_1.envelope_direction = (data & 0x8) ? 1 : -1;
 		gb->snd_1.envelope_time = data & 0x07;
 		if (!gb_dac_enabled(&gb->snd_1))
@@ -549,7 +556,14 @@ static void gb_sound_w_internal(gb_sound_t *gb, UINT8 offset, UINT8 data)
 		break;
 	case NR22: /* Envelope (R/W) */
 		gb->snd_2.reg[2] = data;
-		gb->snd_2.envelope_value = data >> 4;
+		if (data & 0x8) {
+			gb->snd_2.envelope_value++;
+			if (gb->snd_2.envelope_value > 0x0F) {
+				gb->snd_2.envelope_value = 0;
+			}
+		} else {
+			gb->snd_2.envelope_value = data >> 4;
+		}
 		gb->snd_2.envelope_direction = (data & 0x8) ? 1 : -1;
 		gb->snd_2.envelope_time = data & 0x07;
 		if (!gb_dac_enabled(&gb->snd_2))
@@ -694,7 +708,14 @@ static void gb_sound_w_internal(gb_sound_t *gb, UINT8 offset, UINT8 data)
 		break;
 	case NR42: /* Envelope (R/W) */
 		gb->snd_4.reg[2] = data;
-		gb->snd_4.envelope_value = data >> 4;
+		if (data & 0x8) {
+			gb->snd_4.envelope_value++;
+			if (gb->snd_4.envelope_value > 0x0F) {
+				gb->snd_4.envelope_value = 0;
+			}
+		} else {
+			gb->snd_4.envelope_value = data >> 4;
+		}
 		gb->snd_4.envelope_direction = (data & 0x8) ? 1 : -1;
 		gb->snd_4.envelope_time = data & 0x07;
 		if (!gb_dac_enabled(&gb->snd_4))
