@@ -15,6 +15,36 @@
       document.body.addEventListener('touchstart', APU.allow);
     })
 
+    var table = document.createElement('table');
+    document.body.appendChild(table);
+    for (let i0 = 0; i0 < 256; i0 += 16) {
+      var tr = document.createElement('tr');
+      table.appendChild(tr);
+      for (let i1 = 0; i1 < 16; ++i1) {
+        let i = i0 + i1;
+        var td = document.createElement('td');
+        tr.appendChild(td);
+        var button = document.createElement('button');
+        td.appendChild(button);
+        button.innerText = i.toString(2).padStart(8,0);
+        const bytes = new Uint8Array([
+          // power on
+          0xB3, 0x26 - 0x10, 0b10000000,
+          0xB3, 0x24 - 0x10, 0b01110111,
+          0xB3, 0x25 - 0x10, 0b11111111,
+          0xB3, 0x21 - 0x10, 0b11110100,
+          0xB3, 0x22 - 0x10, i,
+          0xB3, 0x23 - 0x10, 0b10000000,
+          // track duration
+          0x61, (44100 / 2) & 0xFF, (44100 / 2) >> 8,
+        ]);
+        const sfx = APU.sfx(bytes, [0, 0, 0, 1])
+        button.onclick = function() {
+          sfx.play();
+        }
+      }
+    }
+
     APU.changeUserVolume(0.5);
 
     function hit(note, beats) {
@@ -223,7 +253,7 @@
         });
       })
 
-      loadedFiles[2].play();
+      // loadedFiles[2].play();
     })
 
     const wavbytes = new Uint8Array([0xB3, 0x15, 0xFF, 0xB3, 0x20, 0xFF, 0xB3, 0x21, 0x00, 0x61, 0xff, 0xff])
