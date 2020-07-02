@@ -44,6 +44,13 @@
 
 // #include <stdlib.h>	// for rand
 // #include <memory.h>	// for memset
+void *memset(void *s, int c, int n)
+{
+    unsigned char* p=s;
+    while(n--)
+        *p++ = (unsigned char)c;
+    return s;
+}
 
 /* 8-bit values */
 typedef unsigned char						UINT8;
@@ -834,10 +841,10 @@ int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate)
 		return 0;
 	
 	gb = &GBSoundData[ChipID];
-	// memset(&gb->snd_1, 0, sizeof(gb->snd_1));
-	// memset(&gb->snd_2, 0, sizeof(gb->snd_2));
-	// memset(&gb->snd_3, 0, sizeof(gb->snd_3));
-	// memset(&gb->snd_4, 0, sizeof(gb->snd_4));
+	memset(&gb->snd_1, 0, sizeof(gb->snd_1));
+	memset(&gb->snd_2, 0, sizeof(gb->snd_2));
+	memset(&gb->snd_3, 0, sizeof(gb->snd_3));
+	memset(&gb->snd_4, 0, sizeof(gb->snd_4));
 
 	//gb->channel = stream_create(device, 0, 2, device->machine->sample_rate, 0, gameboy_update);
 	//gb->rate = device->machine->sample_rate;
@@ -959,10 +966,12 @@ void gameboy_sound_set_options(UINT8 Flags)
 
 //DEFINE_LEGACY_SOUND_DEVICE(GAMEBOY, gameboy_sound);
 
+#define DOWNSAMPLE 8
+
 WASM_EXPORT
 void init(UINT32 sample_rate) {
-	device_start_gameboy_sound(0, sample_rate);
-	device_start_gameboy_sound(1, sample_rate);
+	device_start_gameboy_sound(0, sample_rate * DOWNSAMPLE);
+	device_start_gameboy_sound(1, sample_rate * DOWNSAMPLE);
 	device_reset_gameboy_sound(0);
 	device_reset_gameboy_sound(1);
 }
@@ -985,27 +994,31 @@ void enable_channel(UINT8 ChipID, UINT32 channel) {
 	if (channel == 3) gb->snd_4.Muted = 0;
 }
 
-#define SAMPLE_COUNT 128
+#define OUT_SAMPLE_COUNT 128
+#define MID_SAMPLE_COUNT OUT_SAMPLE_COUNT * DOWNSAMPLE
 
-stream_sample_t lchan0[SAMPLE_COUNT];
-stream_sample_t rchan0[SAMPLE_COUNT];
-stream_sample_t lchan1[SAMPLE_COUNT];
-stream_sample_t rchan1[SAMPLE_COUNT];
+stream_sample_t lchan0[MID_SAMPLE_COUNT];
+stream_sample_t rchan0[MID_SAMPLE_COUNT];
+stream_sample_t lchan1[MID_SAMPLE_COUNT];
+stream_sample_t rchan1[MID_SAMPLE_COUNT];
 
-stream_sample_t (*out_samples0[SAMPLE_COUNT]) = { lchan0, rchan0 };
-stream_sample_t (*out_samples1[SAMPLE_COUNT]) = { lchan1, rchan1 };
+stream_sample_t (*out_samples0[MID_SAMPLE_COUNT]) = { lchan0, rchan0 };
+stream_sample_t (*out_samples1[MID_SAMPLE_COUNT]) = { lchan1, rchan1 };
 
 WASM_EXPORT
-stream_sample_t lchan[SAMPLE_COUNT];
+stream_sample_t lchan[OUT_SAMPLE_COUNT];
 WASM_EXPORT
-stream_sample_t rchan[SAMPLE_COUNT];
+stream_sample_t rchan[OUT_SAMPLE_COUNT];
 
 WASM_EXPORT
 void update() {
-	gameboy_update(0, out_samples0, SAMPLE_COUNT);
-	gameboy_update(1, out_samples1, SAMPLE_COUNT);
-	for (int i = 0; i < SAMPLE_COUNT; ++i) {
-		lchan[i] = lchan0[i] + lchan1[i];
-		rchan[i] = rchan0[i] + rchan1[i];
+	gameboy_update(0, out_samples0, MID_SAMPLE_COUNT);
+	gameboy_update(1, out_samples1, MID_SAMPLE_COUNT);
+	for (int i = 0; i < OUT_SAMPLE_COUNT; ++i) {
+		lchan[i] = rchan[i] = 0;
+	}
+	for (int i = 0; i < MID_SAMPLE_COUNT; ++i) {
+		lchan[i/DOWNSAMPLE] += (lchan0[i] + lchan1[i]) / DOWNSAMPLE;
+		rchan[i/DOWNSAMPLE] += (rchan0[i] + rchan1[i]) / DOWNSAMPLE;
 	}
 }
