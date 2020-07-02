@@ -206,7 +206,7 @@ struct _gb_sound_t
 #define MAX_CHIPS	0x02
 static gb_sound_t GBSoundData[MAX_CHIPS];
 
-static UINT8 LoudWaveChn = 0x00;
+static UINT8 LoudWaveChn = 0x01;
 static UINT8 LowNoiseChn = 0x00;
 static UINT8 AccuracyHack = 0x01;
 
