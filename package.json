@@ -2,9 +2,10 @@
   "name": "apu",
   "version": "0.2.24",
   "description": "Easy 3 kB library for 98% accurate Gameboy audio",
-  "browser": "dist/apu.polyfilled.min.js",
+  "main": "dist/apu.mjs",
+  "browser": "dist/apu.polyfilled.min.mjs",
   "files": [
-    "dist/*.js",
+    "dist/*.mjs",
     "index.d.ts"
   ],
   "scripts": {

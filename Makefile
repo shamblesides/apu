@@ -1,6 +1,6 @@
 .PHONY: clean
 
-default: .tmp dist dist/apu.js dist/apu.min.js dist/apu.polyfilled.js dist/apu.polyfilled.min.js index.d.ts
+default: .tmp dist dist/apu.mjs dist/apu.min.mjs dist/apu.polyfilled.mjs dist/apu.polyfilled.min.mjs index.d.ts
 
 clean:
 	rm -rf .tmp dist
@@ -8,17 +8,17 @@ clean:
 dist:
 	mkdir dist
 
-dist/apu.js: .tmp/apu.js
-	cp .tmp/apu.js dist/apu.js
+dist/apu.mjs: .tmp/apu.js
+	cp .tmp/apu.js dist/apu.mjs
 
-dist/apu.min.js: dist/apu.js
-	npx terser -mc < dist/apu.js > dist/apu.min.js
+dist/apu.min.mjs: dist/apu.mjs
+	npx terser -mc < dist/apu.mjs > dist/apu.min.mjs
 
-dist/apu.polyfilled.js: dist/apu.js
-	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.js > dist/apu.polyfilled.js
+dist/apu.polyfilled.mjs: dist/apu.mjs
+	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.mjs > dist/apu.polyfilled.mjs
 
-dist/apu.polyfilled.min.js: dist/apu.min.js
-	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.min.js > dist/apu.polyfilled.min.js
+dist/apu.polyfilled.min.mjs: dist/apu.min.mjs
+	cat node_modules/@shamblesides/audioworklet-polyfill/dist/audioworklet-polyfill.js dist/apu.min.mjs > dist/apu.polyfilled.min.mjs
 
 index.d.ts: lib/index.ts
 	npx tsc --emitDeclarationOnly --declaration --lib dom,es2015 lib/index.ts --outDir .

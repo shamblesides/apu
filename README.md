@@ -7,13 +7,13 @@ Want some hardware-accurate Gameboy music and sounds in your HTML5 game or app? 
 Features
 --------
 
-* Tiny; single .js file, about 9 kB (gzip)
+* Tiny; single file, about 9 kB (gzip)
 * Supports playing .vgm files (which are typically a few kB after gzip)
 * Mute BGM channels while playing SFX
 * Highly performant
 * * Fast sample generation in WebAssembly
 * * When possible, uses AudioWorklet to run completely outside the main thread (works in latest Chrome and FireFox)
-* UMD module; works as script tag, AMD module, in webpack, etc
+* ES module
 * TypeScript bindings
 
 
