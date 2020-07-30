@@ -758,8 +758,8 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 		if( gb->snd_4.on && ! gb->snd_4.Muted )
 		{
 			/* Similar problem to Mode 3, we seem to miss some notes */
-			sample = gb->snd_4.signal * (gb->snd_4.env_value / 72.0);
-			sample -= (gb->snd_4.env_value / 72.0) / 2;	// make Bipolar
+			sample = gb->snd_4.signal * (gb->snd_4.env_value / 80.0);
+			sample -= (gb->snd_4.env_value / 80.0) / 2;	// make Bipolar
 			// if (! LowNoiseChn)
 			// 	sample <<= 1;	// that's more like VisualBoy Advance (and sounds better)
 
@@ -769,7 +769,7 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 				right += sample;
 
 			gb->snd_4.pos_float++;
-			FLOAT32 period = (gb->snd_4.period * 1.0 / (1 << (FIXED_POINT + 1)));
+			FLOAT32 period = (gb->snd_4.period * 1.0 / (1 << FIXED_POINT));
 			UINT32 passes = (UINT32)(gb->snd_4.pos_float / period);
 			if (passes > 0) {
 				FLOAT32 signal = 0;
@@ -778,7 +778,7 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 					/* Using a Polynomial Counter (aka Linear Feedback Shift Register)
 										Mode 4 has a 7 bit and 15 bit counter so we need to shift the
 										bits around accordingly */
-					gb->snd_4.pos_float -= (gb->snd_4.period * 1.0 / (1 << (FIXED_POINT + 1)));
+					gb->snd_4.pos_float -= period;
 					mode4_mask = (((gb->snd_4.ply_value & 0x2) >> 1) ^ (gb->snd_4.ply_value & 0x1)) << (gb->snd_4.ply_step ? 6 : 14);
 					gb->snd_4.ply_value >>= 1;
 					gb->snd_4.ply_value |= mode4_mask;
