@@ -758,8 +758,8 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 		if( gb->snd_4.on && ! gb->snd_4.Muted )
 		{
 			/* Similar problem to Mode 3, we seem to miss some notes */
-			sample = gb->snd_4.signal * gb->snd_4.env_value / 96;
-			sample -= sample / 2;	// make Bipolar
+			sample = gb->snd_4.signal * (gb->snd_4.env_value / 72.0);
+			sample -= (gb->snd_4.env_value / 72.0) / 2;	// make Bipolar
 			// if (! LowNoiseChn)
 			// 	sample <<= 1;	// that's more like VisualBoy Advance (and sounds better)
 
