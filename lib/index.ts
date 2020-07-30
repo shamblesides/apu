@@ -26,7 +26,15 @@ export const audioContext = new AudioContext({latencyHint:'interactive'});
  * Until this is called, the browser won't allow any sound to play.
  */
 export function allow() {
-	audioContext.resume();
+  audioContext.resume();
+  
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      audioContext.resume();
+    } else {
+      audioContext.suspend();
+    }
+  });
 }
 
 let lastVolume = 1;
