@@ -63,6 +63,7 @@ typedef signed short						INT16;
 /* 32-bit values */
 typedef unsigned int						UINT32;
 typedef signed int							INT32;
+typedef float										FLOAT32;
 
 /* offsets and addresses are 32-bit (for now...) */
 typedef UINT32	offs_t;
@@ -134,6 +135,7 @@ struct SOUND
 	UINT8  channel;
 	INT32  length;
 	INT32  pos;
+	FLOAT32  pos_float;
 	//UINT32 pos;
 	UINT32 period;
 	INT32  count;
@@ -421,7 +423,7 @@ static void gb_sound_w_internal(gb_sound_t *gb, int offset, UINT8 data )
 		if( data & 0x80 )
 		{
 			if( !gb->snd_4.on )
-				gb->snd_4.pos = 0;
+				gb->snd_4.pos_float = 0;
 			gb->snd_4.on = 1;
 			gb->snd_4.count = 0;
 			gb->snd_4.env_value = gb->snd_regs[NR42] >> 4;
@@ -760,21 +762,13 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 			sample -= gb->snd_4.env_value / 2;	// make Bipolar
 			if (! LowNoiseChn)
 				sample <<= 1;	// that's more like VisualBoy Advance (and sounds better)
-			gb->snd_4.pos++;
-			if( gb->snd_4.pos == (gb->snd_4.period >> (FIXED_POINT + 1)) )
+			gb->snd_4.pos_float++;
+			while( gb->snd_4.pos_float >= (gb->snd_4.period * 1.0 / (1 << (FIXED_POINT + 1))) )
 			{
 				/* Using a Polynomial Counter (aka Linear Feedback Shift Register)
                    Mode 4 has a 7 bit and 15 bit counter so we need to shift the
                    bits around accordingly */
-				mode4_mask = (((gb->snd_4.ply_value & 0x2) >> 1) ^ (gb->snd_4.ply_value & 0x1)) << (gb->snd_4.ply_step ? 6 : 14);
-				gb->snd_4.ply_value >>= 1;
-				gb->snd_4.ply_value |= mode4_mask;
-				gb->snd_4.ply_value &= (gb->snd_4.ply_step ? 0x7f : 0x7fff);
-				gb->snd_4.signal = (INT8)gb->snd_4.ply_value;
-			}
-			else if( gb->snd_4.pos > (gb->snd_4.period >> FIXED_POINT) )
-			{
-				gb->snd_4.pos = 0;
+				gb->snd_4.pos_float -= (gb->snd_4.period * 1.0 / (1 << (FIXED_POINT + 1)));
 				mode4_mask = (((gb->snd_4.ply_value & 0x2) >> 1) ^ (gb->snd_4.ply_value & 0x1)) << (gb->snd_4.ply_step ? 6 : 14);
 				gb->snd_4.ply_value >>= 1;
 				gb->snd_4.ply_value |= mode4_mask;
