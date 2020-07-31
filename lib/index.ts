@@ -11,15 +11,10 @@ export const
   C7=1923, Cs7=1930, D7=1936, Ds7=1943, E7=1949, F7=1954, Fs7=1959, G7=1964, Gs7=1969, A7=1974, As7=1978, B7=1982,
   C8=1985, Cs8=1989, D8=1992, Ds8=1995, E8=1998, F8=2001, Fs8=2004, G8=2006, Gs8=2009, A8=2011, As8=2013, B8=2015;
 
-declare const webkitAudioContext: any;
-if ('webkitAudioContext' in window) {
-  window.AudioContext = webkitAudioContext;
-}
-
 /**
  * Audio Context that all APU stuff runs on
  */
-export const audioContext = new AudioContext({latencyHint:'interactive'});
+export const audioContext = ('webkitAudioContext' in window) ? <AudioContext>(new window['webkitAudioContext']()) : (new AudioContext({latencyHint:'interactive'}));
 
 /**
  * Resumes the audio context. Should be called as a result of some user event, like a click.
@@ -60,14 +55,16 @@ export const audioNode: AudioNode = userVolumeNode;
 const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
 const workletURL = URL.createObjectURL(workletBlob);
 const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
-const nodePromise: Promise<AudioWorkletNode> = audioContext.audioWorklet.addModule(workletURL).then(() => {
-  const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
-  node.connect(userVolumeNode)
-  return new Promise(resolve => {
-    node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
-    node.port.postMessage({ type: 'module', data: wasmBuffer });
-  });
-})
+const nodePromise: Promise<AudioWorkletNode> = ('WebAssembly' in window)
+  ? audioContext.audioWorklet.addModule(workletURL).then(() => {
+      const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
+      node.connect(userVolumeNode)
+      return new Promise(resolve => {
+        node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
+        node.port.postMessage({ type: 'module', data: wasmBuffer });
+      });
+    })
+  : new Promise(() => {});
 
 let nextInstanceId = 0;
 
