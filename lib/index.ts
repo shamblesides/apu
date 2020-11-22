@@ -54,9 +54,9 @@ export const audioNode: AudioNode = userVolumeNode;
 
 const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
 const workletURL = URL.createObjectURL(workletBlob);
-const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
 const nodePromise: Promise<AudioWorkletNode> = ('WebAssembly' in window)
   ? audioContext.audioWorklet.addModule(workletURL).then(() => {
+      const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
       const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
       node.connect(userVolumeNode)
       return new Promise(resolve => {
