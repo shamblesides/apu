@@ -824,7 +824,6 @@ void gameboy_update(UINT8 ChipID, stream_sample_t **outputs, int samples)
 
 
 //static DEVICE_START( gameboy_sound )
-WASM_EXPORT
 int device_start_gameboy_sound(UINT8 ChipID, UINT32 sample_rate)
 {
 	//gb_sound_t *gb = get_token(device);
@@ -892,7 +891,6 @@ void device_stop_gameboy_sound(UINT8 ChipID)
 	return;
 }
 
-WASM_EXPORT
 void device_reset_gameboy_sound(UINT8 ChipID)
 {
 	gb_sound_t *gb = &GBSoundData[ChipID];
@@ -960,32 +958,6 @@ void gameboy_sound_set_options(UINT8 Flags)
 
 //DEFINE_LEGACY_SOUND_DEVICE(GAMEBOY, gameboy_sound);
 
-WASM_EXPORT
-void init(UINT32 sample_rate) {
-	device_start_gameboy_sound(0, sample_rate);
-	device_start_gameboy_sound(1, sample_rate);
-	device_reset_gameboy_sound(0);
-	device_reset_gameboy_sound(1);
-}
-
-WASM_EXPORT
-void disable_channel(UINT8 ChipID, UINT32 channel) {
-	gb_sound_t *gb = &GBSoundData[ChipID];
-	if (channel == 0) gb->snd_1.Muted = 1;
-	if (channel == 1) gb->snd_2.Muted = 1;
-	if (channel == 2) gb->snd_3.Muted = 1;
-	if (channel == 3) gb->snd_4.Muted = 1;
-}
-
-WASM_EXPORT
-void enable_channel(UINT8 ChipID, UINT32 channel) {
-	gb_sound_t *gb = &GBSoundData[ChipID];
-	if (channel == 0) gb->snd_1.Muted = 0;
-	if (channel == 1) gb->snd_2.Muted = 0;
-	if (channel == 2) gb->snd_3.Muted = 0;
-	if (channel == 3) gb->snd_4.Muted = 0;
-}
-
 #define SAMPLE_COUNT 128
 
 stream_sample_t lchan0[SAMPLE_COUNT];
@@ -1001,12 +973,166 @@ stream_sample_t lchan[SAMPLE_COUNT];
 WASM_EXPORT
 stream_sample_t rchan[SAMPLE_COUNT];
 
+struct _TRACK_STATE {
+	UINT32 track_length;
+	INT32 index;
+	FLOAT32 timer;
+	INT32 loop_point;
+	UINT8 mask0;
+	UINT8 mask1;
+	UINT8 mask2;
+	UINT8 mask3;
+};
+typedef struct _TRACK_STATE TRACK_STATE;
+
 WASM_EXPORT
-void update() {
+UINT8 tracks[MAX_CHIPS][10 * 1024 * 1024];
+
+static TRACK_STATE track_state[MAX_CHIPS];
+
+WASM_EXPORT
+void play_song(UINT32 length, INT32 loop_point) {
+	track_state[0].track_length = length;
+	track_state[0].index = 0;
+	track_state[0].timer = 0;
+	track_state[0].loop_point = loop_point;
+	track_state[0].mask0 = 1;
+	track_state[0].mask1 = 1;
+	track_state[0].mask2 = 1;
+	track_state[0].mask3 = 1;
+
+	track_state[1].track_length = -1;
+	track_state[1].index = -1;
+	track_state[1].timer = 0;
+	track_state[1].loop_point = -1;
+	track_state[1].mask0 = 0;
+	track_state[1].mask1 = 0;
+	track_state[1].mask2 = 0;
+	track_state[1].mask3 = 0;
+
+	GBSoundData[1].snd_1.Muted = 1;
+	GBSoundData[1].snd_2.Muted = 1;
+	GBSoundData[1].snd_3.Muted = 1;
+	GBSoundData[1].snd_4.Muted = 1;
+
+	gb_sound_w(0, 0x16, 0);
+}
+
+WASM_EXPORT
+void play_sfx(UINT32 length, UINT8 mask0, UINT8 mask1, UINT8 mask2, UINT8 mask3) {
+	track_state[0].mask0 = !mask0;
+	track_state[0].mask1 = !mask1;
+	track_state[0].mask2 = !mask2;
+	track_state[0].mask3 = !mask3;
+
+	track_state[1].track_length = length;
+	track_state[1].index = 0;
+	track_state[1].timer = 0;
+	track_state[1].loop_point = -1;
+	track_state[1].mask0 = mask0;
+	track_state[1].mask1 = mask1;
+	track_state[1].mask2 = mask2;
+	track_state[1].mask3 = mask3;
+
+	if (mask0) GBSoundData[0].snd_1.Muted = 1;
+	if (mask1) GBSoundData[0].snd_2.Muted = 1;
+	if (mask2) GBSoundData[0].snd_3.Muted = 1;
+	if (mask3) GBSoundData[0].snd_4.Muted = 1;
+}
+
+UINT32 song_context_tick_chip(UINT8 ChipID) {
+	TRACK_STATE * state = &track_state[ChipID];
+	UINT8 * track = tracks[ChipID];
+	while (state->timer <= 0 && state->index >= 0) {
+		if (state->index >= state->track_length) {
+			state->index = state->loop_point;
+			if (state->index == -1) {
+				if (ChipID == 1) {
+					state->mask0 = 0;
+					state->mask1 = 0;
+					state->mask2 = 0;
+					state->mask3 = 0;
+
+					track_state[0].mask0 = 1;
+					track_state[0].mask1 = 1;
+					track_state[0].mask2 = 1;
+					track_state[0].mask3 = 1;
+				}
+				break;
+			}
+		}
+		UINT8 op = track[state->index++];
+		switch (op) {
+			case 0xB3: {
+				UINT8 reg = track[state->index++];
+				UINT8 val = track[state->index++];
+				gb_sound_w(ChipID, reg, val);
+				if (val & 0x80) {
+					if      (reg == 0x04 && state->mask0) GBSoundData[ChipID].snd_1.Muted = 0;
+					else if (reg == 0x09 && state->mask1) GBSoundData[ChipID].snd_2.Muted = 0;
+					else if (reg == 0x0E && state->mask2) GBSoundData[ChipID].snd_3.Muted = 0;
+					else if (reg == 0x13 && state->mask3) GBSoundData[ChipID].snd_4.Muted = 0;
+				}
+				break;
+			}
+			case 0x61: {
+				UINT16 t = (track[state->index++]) + (track[state->index++] << 8);
+				state->timer += t;
+				break;
+			}
+			case 0x62: {
+				UINT16 t = 735;
+				state->timer += t;
+				break;
+			}
+			case 0x66: {
+				state->index = state->track_length;
+				break;
+			}
+			default: {
+				if ((op & 0xF0) == 0x70) {
+					UINT16 t = 1 + (op & 0x0f);
+					state->timer += t;
+				} else {
+					return 1000000 + state->index * 1000 + op; // failure case
+				}
+			}
+		}
+	}
+
+	FLOAT32 t = 44100.0 / (&GBSoundData[ChipID])->rate;
+	state->timer -= t;
+	return 0;
+}
+
+UINT32 song_context_tick() {
+	UINT32 err;
+	if ((err = song_context_tick_chip(0))) return err;
+	if ((err = song_context_tick_chip(1))) return err;
+	return 0;
+}
+
+WASM_EXPORT
+UINT32 update() {
+	UINT32 err;
+	for (int i = 0; i < SAMPLE_COUNT; ++i) {
+		if ((err = song_context_tick())) return err;
+	}
 	gameboy_update(0, out_samples0, SAMPLE_COUNT);
 	gameboy_update(1, out_samples1, SAMPLE_COUNT);
 	for (int i = 0; i < SAMPLE_COUNT; ++i) {
 		lchan[i] = lchan0[i] + lchan1[i];
 		rchan[i] = rchan0[i] + rchan1[i];
 	}
+	return 0;
+}
+
+WASM_EXPORT
+void init(UINT32 sample_rate) {
+	device_start_gameboy_sound(0, sample_rate);
+	device_start_gameboy_sound(1, sample_rate);
+	device_reset_gameboy_sound(0);
+	device_reset_gameboy_sound(1);
+	track_state[0].index = -1;
+	track_state[1].index = -1;
 }
