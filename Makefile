@@ -35,11 +35,8 @@ index.d.ts: lib/index.ts
 .tmp/gb.wasm: .tmp/gb.unoptimized.wasm
 	wasm-opt -O2 -o .tmp/gb.wasm .tmp/gb.unoptimized.wasm
 
-.tmp/gb.worklet.es5.js: lib/gb.worklet.js
-	npx babel --presets @babel/preset-env lib/gb.worklet.js > .tmp/gb.worklet.es5.js
-
-.tmp/gb.worklet.min.js: .tmp/gb.worklet.es5.js
-	npx terser -mc < .tmp/gb.worklet.es5.js > .tmp/gb.worklet.min.js
+.tmp/gb.worklet.min.js: lib/gb.worklet.js
+	npx terser -mc < lib/gb.worklet.js > .tmp/gb.worklet.min.js
 
 .tmp/apu.ts: lib/index.ts .tmp/gb.wasm .tmp/gb.worklet.min.js
 	./tools/combine.js > .tmp/apu.ts
