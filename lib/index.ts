@@ -61,7 +61,7 @@ const nodePromise: Promise<AudioWorkletNode> = ('WebAssembly' in window)
       node.connect(userVolumeNode)
       return new Promise(resolve => {
         node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
-        node.port.postMessage({ type: 'module', data: wasmBuffer });
+        node.port.postMessage({ type: 'wasm', data: wasmBuffer });
       });
     })
   : new Promise(() => {});
