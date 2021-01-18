@@ -68,12 +68,19 @@ const nodePromise: Promise<AudioWorkletNode> = ('WebAssembly' in window)
 
 let nextInstanceId = 0;
 
+let currentFadeCallback = null;
+
 let allowSFX = true;
 
 function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
   return {
     play() {
       if (mask && !allowSFX) return null;
+
+      if (data.byteLength > 0) {
+        allowSFX = true;
+        currentFadeCallback = null;
+      }
 
       const id = ++nextInstanceId;
       nodePromise.then(node => {
@@ -154,33 +161,57 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
  * @returns A promise that resolves when the fade has completed
  */
 export function fade(millis: number = 2000) {
-  // TODO: should be no-op if already fading
   return nodePromise.then(node => {
+    const wasAlreadyFading = (currentFadeCallback != null);
+
+    const promise = new Promise(resolve => {
+      currentFadeCallback = resolve;
+    }).then(() => {
+      currentFadeCallback = null;
+      allowSFX = true
+    })
+
     // halt any currently-playing SFX
     sfx(new ArrayBuffer(0), [0,0,0,0]).play();
 
-    if (millis > 0) {
-      // disallow sfx until fade completes
-      allowSFX = false;
+    if (!wasAlreadyFading) {
+      // id of currently running song;
+      // we don't want to keep fading if we switch songs
+      // mid-fade
+      const id = nextInstanceId;
 
-      // use NR50 to fade out
-      for (let i = 0; i <= 5; ++i) {
-        const vol = 6 - i;
-        setTimeout(() => node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) }), millis*i/7);
+      if (millis > 0) {
+        // disallow sfx until fade completes
+        allowSFX = false;
+
+        // use NR50 to fade out
+        for (let i = 0; i <= 5; ++i) {
+          const vol = 6 - i;
+          setTimeout(() => {
+            if (id !== nextInstanceId) return;
+            node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) })
+          }, millis*i/7);
+        }
+
+        // stop sound with NR52
+        setTimeout(() => {
+          if (id !== nextInstanceId) return;
+          node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
+          // and clear song
+          bgm(new ArrayBuffer(0), -1).play();
+        }, millis*6/7);
+
+        // done
+        setTimeout(() => {
+          if (id+1 !== nextInstanceId) return;
+          if (currentFadeCallback) {
+            currentFadeCallback();
+          }
+        }, millis)
       }
-
-      // stop sound with NR52
-      setTimeout(() => {
-        node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
-        // and clear song
-        bgm(new ArrayBuffer(0), -1).play();
-      }, millis*6/7);
     }
 
-    // resolve
-    return new Promise(resolve => setTimeout(resolve, millis))
-    // ... and allow sfx once again
-    .then(() => { allowSFX = true });
+    return promise;
   });
 }
 
