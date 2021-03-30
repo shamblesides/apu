@@ -49,6 +49,9 @@ function APU () {
       node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
       node.port.postMessage({ type: 'wasm', data: wasmBuffer });
     });
+  }).catch(() => {
+    // if we fail to load the worklet (maybe the shim failed) then never resolve ready
+    return new Promise(() => {})
   })
 
   return {
