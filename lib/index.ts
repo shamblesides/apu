@@ -11,17 +11,70 @@ export const
   C7=1923, Cs7=1930, D7=1936, Ds7=1943, E7=1949, F7=1954, Fs7=1959, G7=1964, Gs7=1969, A7=1974, As7=1978, B7=1982,
   C8=1985, Cs8=1989, D8=1992, Ds8=1995, E8=1998, F8=2001, Fs8=2004, G8=2006, Gs8=2009, A8=2011, As8=2013, B8=2015;
 
+let lastVolume = 1;
+
+function makeAudioContext(): AudioContext|null {
+  if ('webkitAudioContext' in window) {
+    return new window['webkitAudioContext']();
+  } else {
+    try {
+      return new AudioContext({latencyHint:'interactive'});
+    } catch (err) {
+      try {
+        return new AudioContext();
+      } catch (err) {
+        return null;
+      }
+    }
+  }
+}
+
+function APU () {
+  const audioContext = makeAudioContext();
+  if (!audioContext) return {};
+  if (!audioContext.createGain) return {};
+  if (!('WebAssembly' in window)) return {};
+
+  const userVolumeNode = audioContext.createGain();
+  userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
+  userVolumeNode.connect(audioContext.destination);
+
+  const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
+  const workletURL = URL.createObjectURL(workletBlob);
+  const nodePromise = audioContext.audioWorklet.addModule(workletURL).then(() => {
+    const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
+    const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
+    node.connect(userVolumeNode)
+    return new Promise<AudioWorkletNode>(resolve => {
+      node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
+      node.port.postMessage({ type: 'wasm', data: wasmBuffer });
+    });
+  })
+
+  return {
+    audioContext,
+    userVolumeNode,
+    nodePromise,
+  };
+}
+
+const apu = APU()
+
 /**
  * Audio Context that all APU stuff runs on
  */
-export const audioContext = ('webkitAudioContext' in window) ? <AudioContext>(new window['webkitAudioContext']()) : (new AudioContext({latencyHint:'interactive'}));
+export const audioContext = apu.audioContext;
+
+export const available = !!audioContext;
 
 /**
  * Resumes the audio context. Should be called as a result of some user event, like a click.
  * Until this is called, the browser won't allow any sound to play.
  */
 export function allow() {
-  audioContext.resume();
+  if (!available) return;
+
+  if (document.visibilityState === 'visible') audioContext.resume();
   
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') {
@@ -32,15 +85,14 @@ export function allow() {
   });
 }
 
-let lastVolume = 1;
-const userVolumeNode = audioContext.createGain();
-userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
-userVolumeNode.connect(audioContext.destination);
+const userVolumeNode = apu.userVolumeNode;
 /**
  * Volume multiplier intended to be changed by a user-facing volume control
  * @param newVolume Value between 0 and 1
  */
 export function changeUserVolume(newVolume: number) {
+  if (!available) return;
+
 	if (newVolume >= 0 && newVolume <= 1) {
 		userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
 		userVolumeNode.gain.linearRampToValueAtTime(newVolume, audioContext.currentTime + 0.05)
@@ -52,19 +104,7 @@ export function changeUserVolume(newVolume: number) {
  */
 export const audioNode: AudioNode = userVolumeNode;
 
-const workletBlob = new Blob([workletSource], { type: 'application/javascript' });
-const workletURL = URL.createObjectURL(workletBlob);
-const nodePromise: Promise<AudioWorkletNode> = ('WebAssembly' in window)
-  ? audioContext.audioWorklet.addModule(workletURL).then(() => {
-      const wasmBuffer = new Uint8Array(atob(wasmEncoded).split('').map(s => s.charCodeAt(0))).buffer;
-      const node = new AudioWorkletNode(audioContext, 'gameboy-processor', {outputChannelCount:[2]})
-      node.connect(userVolumeNode)
-      return new Promise(resolve => {
-        node.port.onmessage = ({data:e}) => (e === 'ready') && resolve(node);
-        node.port.postMessage({ type: 'wasm', data: wasmBuffer });
-      });
-    })
-  : new Promise(() => {});
+const nodePromise = apu.nodePromise || (new Promise(() => {}));
 
 let nextInstanceId = 0;
 
