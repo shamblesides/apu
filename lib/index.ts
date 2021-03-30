@@ -51,7 +51,7 @@ function APU () {
     });
   }).catch(() => {
     // if we fail to load the worklet (maybe the shim failed) then never resolve ready
-    return new Promise(() => {})
+    return new Promise<never>(() => {})
   })
 
   return {
