@@ -115,30 +115,9 @@ export const audioNode: AudioNode|undefined = userVolumeNode;
 
 const nodePromise = apu.nodePromise || (new Promise(() => {}));
 
-let nextInstanceId = 0;
+let bgmPlaybackId = 0;
 
 let currentFadeCallback: null | (() => void) = null;
-
-let allowSFX = true;
-
-function track(data: ArrayBuffer, loop: number, mask: APUTrackMask|null=null) {
-  return {
-    play() {
-      const isSFX = mask != null;
-      if (isSFX && !allowSFX) return null;
-
-      if (data.byteLength > 0) {
-        allowSFX = true;
-        currentFadeCallback = null;
-      }
-
-      const id = ++nextInstanceId;
-      nodePromise.then(node => {
-        node.port.postMessage({ id, type: 'play', data, loop, mask });
-      });
-    }
-  }
-}
 
 /**
  * Create a BGM object
@@ -149,7 +128,16 @@ function track(data: ArrayBuffer, loop: number, mask: APUTrackMask|null=null) {
  * @param loop Byte offset of the data block to loop back to upon completion. (-1 if no loop)
  */
 export function bgm(data: ArrayBuffer, loop=0) {
-  return track(data, loop);
+  return {
+    play() {
+      currentFadeCallback = null;
+      ++bgmPlaybackId;
+
+      nodePromise.then(node => {
+        node.port.postMessage({ type: 'playBGM', data, loop });
+      });
+    }
+  }
 }
 
 /**
@@ -167,7 +155,15 @@ export function bgm(data: ArrayBuffer, loop=0) {
  * @param mask Array of four 0's or 1's that indicates which channels this SFX will be using
  */
 export function sfx(data: ArrayBuffer, mask: APUTrackMask=[1,1,1,1]) {
-  return track(data, -1, mask)
+  return {
+    play() {
+      if (currentFadeCallback == null) {
+        nodePromise.then(node => {
+          node.port.postMessage({ type: 'playSFX', data, mask });
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -204,39 +200,36 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
 export function fade(millis: number = 2000) {
   return nodePromise.then(node => {
     // halt any currently-playing SFX
-    sfx(new ArrayBuffer(0), [0,0,0,0]).play();
+    node.port.postMessage({ type: 'stopSFX' })
 
     const wasAlreadyFading = (currentFadeCallback != null);
     if (!wasAlreadyFading) {
       // id of currently running song;
       // we don't want to keep fading if we switch songs
       // mid-fade
-      const id = nextInstanceId;
+      const id = bgmPlaybackId;
 
       if (millis > 0) {
-        // disallow sfx until fade completes
-        allowSFX = false;
-
         // use NR50 to fade out
         for (let i = 0; i <= 5; ++i) {
           const vol = 6 - i;
           setTimeout(() => {
-            if (id !== nextInstanceId) return;
+            if (id !== bgmPlaybackId) return;
             node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) })
           }, millis*i/7);
         }
 
         // stop sound with NR52
         setTimeout(() => {
-          if (id !== nextInstanceId) return;
+          if (id !== bgmPlaybackId) return;
           node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
           // and clear song
-          bgm(new ArrayBuffer(0), -1).play();
+          node.port.postMessage({ type: 'stopBGM' })
         }, millis*6/7);
 
         // done
         setTimeout(() => {
-          if (id+1 !== nextInstanceId) return;
+          if (id !== bgmPlaybackId) return;
           if (currentFadeCallback) {
             currentFadeCallback();
           }
@@ -247,7 +240,6 @@ export function fade(millis: number = 2000) {
     return new Promise<void>(resolve => {
       currentFadeCallback = () => {
         currentFadeCallback = null;
-        allowSFX = true;
         resolve();
       };
     });
