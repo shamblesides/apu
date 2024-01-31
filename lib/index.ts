@@ -1,6 +1,12 @@
 const workletSource = `<%- worklet -%>`;
 const wasmEncoded = '<%- wasm -%>';
 
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext
+  }
+}
+
 type APUTrackMask = [0|1, 0|1, 0|1, 0|1];
 
 export const
@@ -77,13 +83,13 @@ export const available = !!audioContext;
 export function allow() {
   if (!available) return;
 
-  if (document.visibilityState === 'visible') audioContext.resume();
+  if (document.visibilityState === 'visible') audioContext?.resume();
   
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') {
-      audioContext.resume();
+      audioContext?.resume();
     } else {
-      audioContext.suspend();
+      audioContext?.suspend();
     }
   });
 }
@@ -94,7 +100,7 @@ const userVolumeNode = apu.userVolumeNode;
  * @param newVolume Value between 0 and 1
  */
 export function changeUserVolume(newVolume: number) {
-  if (!available) return;
+  if (!available || !userVolumeNode || !audioContext) return;
 
 	if (newVolume >= 0 && newVolume <= 1) {
 		userVolumeNode.gain.setValueAtTime(lastVolume, audioContext.currentTime)
@@ -105,20 +111,21 @@ export function changeUserVolume(newVolume: number) {
 /**
  * The last audio node, which is connected to the AudioContext's destination
  */
-export const audioNode: AudioNode = userVolumeNode;
+export const audioNode: AudioNode|undefined = userVolumeNode;
 
 const nodePromise = apu.nodePromise || (new Promise(() => {}));
 
 let nextInstanceId = 0;
 
-let currentFadeCallback = null;
+let currentFadeCallback: null | (() => void) = null;
 
 let allowSFX = true;
 
-function track(data: ArrayBuffer, loop: number, mask: APUTrackMask=null) {
+function track(data: ArrayBuffer, loop: number, mask: APUTrackMask|null=null) {
   return {
     play() {
-      if (mask && !allowSFX) return null;
+      const isSFX = mask != null;
+      if (isSFX && !allowSFX) return null;
 
       if (data.byteLength > 0) {
         allowSFX = true;
@@ -205,18 +212,10 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
  */
 export function fade(millis: number = 2000) {
   return nodePromise.then(node => {
-    const wasAlreadyFading = (currentFadeCallback != null);
-
-    const promise = new Promise(resolve => {
-      currentFadeCallback = resolve;
-    }).then(() => {
-      currentFadeCallback = null;
-      allowSFX = true
-    })
-
     // halt any currently-playing SFX
     sfx(new ArrayBuffer(0), [0,0,0,0]).play();
 
+    const wasAlreadyFading = (currentFadeCallback != null);
     if (!wasAlreadyFading) {
       // id of currently running song;
       // we don't want to keep fading if we switch songs
@@ -254,7 +253,13 @@ export function fade(millis: number = 2000) {
       }
     }
 
-    return promise;
+    return new Promise<void>(resolve => {
+      currentFadeCallback = () => {
+        currentFadeCallback = null;
+        allowSFX = true;
+        resolve();
+      };
+    });
   });
 }
 
