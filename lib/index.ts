@@ -115,8 +115,6 @@ export const audioNode: AudioNode|undefined = userVolumeNode;
 
 const nodePromise = apu.nodePromise || (new Promise(() => {}));
 
-let bgmPlaybackId = 0;
-
 let currentFadeCallback: null | (() => void) = null;
 
 /**
@@ -131,7 +129,6 @@ export function bgm(data: ArrayBuffer, loop=0) {
   return {
     play() {
       currentFadeCallback = null;
-      ++bgmPlaybackId;
 
       nodePromise.then(node => {
         node.port.postMessage({ type: 'playBGM', data, loop });
@@ -194,54 +191,60 @@ export function fromFile(arrayBuffer: ArrayBuffer) {
 /**
  * Slowly fade out the BGM. This also immediately stops current
  * SFX, and prevents any new SFX from playing until completion.
+ * 
+ * If this function is called a second time before the first
+ * fade operation is complete, the original fade will not be
+ * restarted, but will continue as normal.
+ * 
+ * HOWEVER, the callback from the original fade operation will
+ * be REPLACED by the new provided callback!
+ * 
+ * If this fade is interrupted by another song playback, no
+ * callback will never be called.
+ * 
  * @param millis Number of milliseconds for the fade to complete
+ * @param callback Function to call when fading is completed
  * @returns A promise that resolves when the fade has completed
  */
-export function fade(millis: number = 2000) {
-  return nodePromise.then(node => {
+export function fade(millis: number = 2000, callback: () => void = () => {}) {
+  nodePromise.then(node => {
     // halt any currently-playing SFX
     node.port.postMessage({ type: 'stopSFX' })
 
-    const wasAlreadyFading = (currentFadeCallback != null);
-    if (!wasAlreadyFading) {
-      // id of currently running song;
-      // we don't want to keep fading if we switch songs
-      // mid-fade
-      const id = bgmPlaybackId;
-
+    // If we aren't currently fading already, start the timers up.
+    if (currentFadeCallback == null) {
       if (millis > 0) {
         // use NR50 to fade out
         for (let i = 0; i <= 5; ++i) {
           const vol = 6 - i;
           setTimeout(() => {
-            if (id !== bgmPlaybackId) return;
+            if (currentFadeCallback == null) return;
             node.port.postMessage({ type: 'write', layer: 0, register: 0x14, value: (vol<<4)+(vol) })
           }, millis*i/7);
         }
 
         // stop sound with NR52
         setTimeout(() => {
-          if (id !== bgmPlaybackId) return;
+          if (currentFadeCallback == null) return;
           node.port.postMessage({ type: 'write', layer: 0, register: 0x16, value: 0 })
           // and clear song
           node.port.postMessage({ type: 'stopBGM' })
         }, millis*6/7);
-
-        // done
-        setTimeout(() => {
-          if (id !== bgmPlaybackId) return;
-          if (currentFadeCallback) {
-            currentFadeCallback();
-          }
-        }, millis)
       }
+
+      // done
+      setTimeout(() => {
+        if (currentFadeCallback) {
+          const f = currentFadeCallback;
+          currentFadeCallback = null;
+          f();
+        }
+      }, millis)
     }
 
-    return new Promise<void>(resolve => {
-      currentFadeCallback = () => {
-        currentFadeCallback = null;
-        resolve();
-      };
-    });
+    // Set the current fade callback. Even if we were already fading before,
+    // we still set the callback. This will be the new callback for the
+    // ongoing fade.
+    currentFadeCallback = callback;
   });
 }
