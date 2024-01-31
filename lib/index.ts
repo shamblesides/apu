@@ -262,19 +262,3 @@ export function fade(millis: number = 2000) {
     });
   });
 }
-
-type APUWait = number;
-type APUCommand = APUPulseCommand | APUWaveCommand | APUNoiseCommand;
-type APUPulseCommand = {
-  
-};
-type APUWaveCommand = {
-  
-};
-type APUNoiseCommand = {
-  
-};
-
-export function compile(commands: (APUCommand|APUWait)[]) {
-
-}
