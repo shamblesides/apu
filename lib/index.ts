@@ -136,14 +136,6 @@ function track(data: ArrayBuffer, loop: number, mask: APUTrackMask|null=null) {
       nodePromise.then(node => {
         node.port.postMessage({ id, type: 'play', data, loop, mask });
       });
-      return {
-        pause() {
-          nodePromise.then(node => node.port.postMessage({ id, type: 'pause' }));
-        },
-        resume() {
-          nodePromise.then(node => node.port.postMessage({ id, type: 'resume' }));
-        },
-      }
     }
   }
 }
@@ -153,7 +145,6 @@ function track(data: ArrayBuffer, loop: number, mask: APUTrackMask|null=null) {
  *
  * When a BGM is played, it will immediately stop any previous BGM and SFX
  *
- * TODO: resume paused BGM
  * @param data Data block of a VGM file
  * @param loop Byte offset of the data block to loop back to upon completion. (-1 if no loop)
  */
